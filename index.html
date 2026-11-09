@@ -29,6 +29,19 @@
   /* header stats */
   .topbar{padding:20px 2px 6px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between}
   .today-line{font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;color:var(--ink2);font-size:15px}
+  .auth-box{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0}
+  .auth-user{font-size:14px;color:var(--ink2);text-align:right;word-break:break-word}
+  .auth-user b{color:var(--ink)}
+  .sync-status{font-size:13px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--ink2);white-space:nowrap}
+  .sync-status.saved{background:#e6f4ea;color:#137333}
+  .sync-status.saving{background:#fef7e0;color:#7a5a00}
+  @media (prefers-color-scheme: dark){
+    .sync-status.saved{background:#1e3a2a;color:#81c995}
+    .sync-status.saving{background:#3a2f10;color:#fdd663}
+  }
+  .google-btn{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:9px 16px;font-family:"Barlow",sans-serif;font-weight:600;font-size:15px;cursor:pointer;box-shadow:var(--shadow)}
+  .google-btn:active{transform:translateY(1px)}
+  @media (max-width:560px){.auth-box{align-items:flex-start;margin-top:8px}.auth-user{text-align:left}}
   .stat-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;box-shadow:var(--shadow)}
   .stat b{font-family:"Barlow Condensed",sans-serif;font-size:24px;display:block;line-height:1}
@@ -125,6 +138,12 @@
     <div>
       <h1 style="font-size:34px">Workout Tracker</h1>
       <div class="today-line" id="todayLine"></div>
+      <div style="margin-top:8px"><span class="sync-status" id="syncStatus">Signed out — saving on this device only</span></div>
+    </div>
+    <div class="auth-box" id="authBox">
+      <button class="google-btn" id="signInBtn" type="button"><span aria-hidden="true" style="font-weight:700">G</span> Sign in with Google</button>
+      <div class="auth-user" id="authUser" style="display:none"></div>
+      <button class="btn ghost small" id="signOutBtn" type="button" style="display:none">Sign out</button>
     </div>
   </div>
   <div class="stat-row" id="statRow"></div>
@@ -226,7 +245,7 @@
     </div>
     <div class="card">
       <h2>Your data</h2>
-      <p class="sub">Everything is stored in this browser on this device — logging is instant and works offline. Export regularly to keep a backup you can move to another browser or device.</p>
+      <p class="sub" id="dataHelpText">Logging is instant and works offline. When you're signed in, your history also saves to the cloud automatically so it syncs across devices. When signed out, it saves on this device only — use Export for a backup you can move elsewhere.</p>
       <div class="btnrow">
         <button class="btn secondary" id="expJsonBtn" type="button">Export history (JSON)</button>
         <button class="btn secondary" id="expCsvBtn" type="button">Export history (CSV)</button>
@@ -250,7 +269,7 @@
     </div>
   </section>
 
-  <footer>Local-first: sets save on this device the moment you tap Log — no server round-trip, no stuck button.</footer>
+  <footer>Local-first: sets save instantly on this device. When signed in, they also sync to the cloud.</footer>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
@@ -259,6 +278,9 @@
 /* ===== Seed: Jacob's deduped export (370 sets, snapshot Nov 8, 2026 2:23pm) ===== */
 var SEED = {"exercises":[[1,"Bench Press","Chest"],[2,"Incline DB Press","Chest"],[3,"Push-ups","Chest"],[4,"Chest Fly","Chest"],[5,"Dips","Chest"],[6,"Pull-ups","Back"],[7,"Bent Over Row","Back"],[8,"Lat Pulldown","Back"],[9,"Deadlift","Back"],[10,"Seated Cable Row","Back"],[11,"Squat","Legs"],[12,"Leg Press","Legs"],[13,"Lunges","Legs"],[14,"Leg Extension","Legs"],[15,"Romanian Deadlift","Legs"],[16,"Overhead Press","Shoulders"],[17,"Lateral Raise","Shoulders"],[18,"Front Raise","Shoulders"],[19,"Face Pull","Shoulders"],[20,"Arnold Press","Shoulders"],[21,"Barbell Curl","Biceps"],[22,"Hammer Curl","Biceps"],[23,"Preacher Curl","Biceps"],[24,"Concentration Curl","Biceps"],[25,"Cable Curl","Biceps"],[26,"Tricep Pushdown","Triceps"],[27,"Skull Crusher","Triceps"],[28,"Overhead Tricep Ext","Triceps"],[29,"Close-Grip Bench","Triceps"],[30,"Tricep Dips","Triceps"],[31,"Hip Thrust","Glutes"],[32,"Glute Bridge","Glutes"],[33,"Bulgarian Split Squat","Glutes"],[34,"Cable Kickback","Glutes"],[35,"Sumo Deadlift","Glutes"],[36,"Plank","Core"],[37,"Russian Twist","Core"],[38,"Hanging Leg Raise","Core"],[39,"Ab Wheel","Core"],[40,"Cable Woodchop","Core"],[41,"Hip Abductor","Glutes"],[42,"Hip Adductor","Glutes"],[43,"Bird Dog","Core"],[44,"Vertical Traction","Back"],[45,"Dead Bug","Core"],[46,"Chest Press Machine","Chest"],[47,"Reverse Fly","Shoulders"],[48,"Wrist Curl","Biceps"],[49,"Upper Back Machine","Back"],[50,"Pec Machine","Chest"],[51,"Reverse Wrist Curl","Biceps"],[52,"Cat-Cow","Core"],[53,"Farmer's Walk","Biceps"],[54,"Hammer Hold","Biceps"],[55,"Arm Extension","Triceps"],[56,"Low Row Machine","Back"],[57,"Pec Fly","Chest"],[58,"Seated Row","Back"],[59,"Calf Raise","Legs"],[60,"Single Seated Row","Back"],[61,"Plate Loaded Shoulder Press","Shoulders"],[62,"Seated Cable Row with Foot Plates","Back"],[63,"Overhead Extension Plate Loaded","Triceps"],[64,"Seated Dip","Triceps"],[65,"Bicep Curl Plate Loaded","Biceps"],[66,"Seated Dip Plate Loaded","Chest"],[67,"Torque Shoulder Press","Shoulders"]],"sets":[[218,47,40.0,8,"lb",1767225600000],[219,47,40.0,8,"lb",1767225600000],[220,47,30.0,8,"lb",1767225600000],[221,31,70.0,10,"lb",1767225600000],[222,31,80.0,10,"lb",1767225600000],[223,31,90.0,10,"lb",1767225600000],[224,50,70.0,8,"lb",1767225600000],[225,50,60.0,10,"lb",1767225600000],[226,50,60.0,8,"lb",1767225600000],[227,8,80.0,10,"lb",1767225600000],[228,8,80.0,10,"lb",1767225600000],[229,8,90.0,8,"lb",1767225600000],[230,2,25.0,10,"lb",1767225600000],[231,2,25.0,10,"lb",1767225600000],[232,2,25.0,8,"lb",1767225600000],[233,22,25.0,8,"lb",1767225600000],[234,22,25.0,7,"lb",1767225600000],[1,42,100.0,10,"lb",1779494400000],[2,42,110.0,10,"lb",1779494400000],[3,42,120.0,6,"lb",1779494400000],[4,41,110.0,10,"lb",1779494400000],[5,41,120.0,10,"lb",1779494400000],[6,41,130.0,8,"lb",1779494400000],[7,12,220.0,10,"lb",1779494400000],[8,12,240.0,10,"lb",1779494400000],[9,12,260.0,8,"lb",1779494400000],[10,1,45.0,10,"lb",1779667200000],[11,1,65.0,8,"lb",1779667200000],[12,1,75.0,6,"lb",1779667200000],[13,1,75.0,6,"lb",1779667200000],[14,11,45.0,10,"lb",1779667200000],[15,11,65.0,10,"lb",1779667200000],[16,41,120.0,10,"lb",1780185600000],[17,41,130.0,10,"lb",1780185600000],[18,41,130.0,8,"lb",1780185600000],[19,42,120.0,10,"lb",1780185600000],[20,42,130.0,8,"lb",1780185600000],[21,42,130.0,6,"lb",1780185600000],[22,12,240.0,8,"lb",1780185600000],[23,12,240.0,8,"lb",1780185600000],[24,12,240.0,6,"lb",1780185600000],[25,31,110.0,6,"lb",1780185600000],[26,31,110.0,6,"lb",1780185600000],[27,31,110.0,6,"lb",1780185600000],[28,12,240.0,10,"lb",1781395200000],[29,12,260.0,8,"lb",1781395200000],[30,12,280.0,6,"lb",1781395200000],[31,44,80.0,10,"lb",1781395200000],[32,44,90.0,8,"lb",1781395200000],[33,44,100.0,6,"lb",1781395200000],[34,31,110.0,10,"lb",1781395200000],[35,31,110.0,8,"lb",1781395200000],[36,46,50.0,10,"lb",1781913600000],[37,46,70.0,10,"lb",1781913600000],[38,46,80.0,8,"lb",1781913600000],[39,8,70.0,10,"lb",1781913600000],[40,8,90.0,10,"lb",1781913600000],[41,8,120.0,6,"lb",1781913600000],[42,15,2.0,20,"lb",1781913600000],[43,15,2.0,30,"lb",1781913600000],[44,15,2.0,30,"lb",1781913600000],[45,4,30.0,6,"lb",1781913600000],[46,4,25.0,8,"lb",1781913600000],[47,45,0.0,20,"lb",1781913600000],[48,36,0.0,90,"lb",1781913600000],[49,45,2.0,10,"lb",1782259200000],[50,36,2.0,30,"lb",1782259200000],[51,32,2.0,12,"lb",1782259200000],[52,43,2.0,8,"lb",1782259200000],[53,52,0.0,8,"lb",1782259200000],[54,41,140.0,8,"lb",1782259200000],[55,41,130.0,8,"lb",1782259200000],[56,41,130.0,10,"lb",1782259200000],[57,42,120.0,8,"lb",1782259200000],[58,8,90.0,6,"lb",1782259200000],[59,10,90.0,8,"lb",1782259200000],[60,47,40.0,7,"lb",1782259200000],[61,16,40.0,7,"lb",1782259200000],[62,16,50.0,6,"lb",1782259200000],[63,26,70.0,8,"lb",1782259200000],[64,53,30.864679999999996,1,"lb",1782259200000],[65,1,60.0,8,"lb",1782259200000],[66,46,70.0,8,"lb",1782950400000],[67,48,5.0,15,"lb",1782950400000],[68,51,5.0,15,"lb",1782950400000],[69,54,5.0,45,"lb",1782950400000],[70,54,5.0,45,"lb",1782950400000],[71,54,5.0,45,"lb",1782950400000],[72,26,70.0,7,"lb",1783814400000],[73,26,70.0,7,"lb",1783814400000],[74,26,70.0,7,"lb",1783814400000],[75,2,25.0,10,"lb",1783814400000],[76,2,25.0,10,"lb",1783814400000],[77,2,25.0,10,"lb",1783814400000],[78,7,25.0,10,"lb",1783814400000],[79,7,30.0,10,"lb",1783814400000],[80,7,30.0,10,"lb",1783814400000],[81,23,30.0,10,"lb",1783814400000],[82,23,35.0,6,"lb",1783814400000],[83,23,35.0,6,"lb",1783814400000],[84,44,70.0,10,"lb",1783814400000],[85,44,80.0,8,"lb",1783814400000],[86,44,80.0,10,"lb",1783814400000],[87,31,90.0,8,"lb",1783814400000],[88,31,90.0,8,"lb",1783814400000],[89,31,90.0,8,"lb",1783814400000],[90,6,90.0,6,"lb",1783814400000],[91,12,140.0,10,"lb",1783814400000],[92,12,180.0,10,"lb",1783814400000],[93,12,180.0,10,"lb",1783814400000],[94,12,200.0,10,"lb",1783814400000],[95,12,220.0,4,"lb",1783814400000],[96,42,130.0,8,"lb",1783814400000],[97,42,130.0,6,"lb",1783814400000],[98,41,130.0,6,"lb",1783814400000],[99,41,130.0,8,"lb",1783814400000],[100,1,35.0,10,"lb",1784073600000],[101,1,55.0,10,"lb",1784073600000],[102,1,65.0,8,"lb",1784073600000],[103,1,75.0,8,"lb",1784073600000],[104,31,20.0,10,"lb",1784073600000],[105,31,35.0,10,"lb",1784073600000],[106,31,45.0,10,"lb",1784073600000],[107,12,180.0,10,"lb",1784073600000],[108,12,200.0,10,"lb",1784073600000],[109,12,220.0,8,"lb",1784073600000],[110,6,90.0,8,"lb",1784073600000],[111,6,60.0,6,"lb",1784073600000],[112,6,60.0,4,"lb",1784073600000],[113,15,45.0,8,"lb",1784332800000],[114,15,65.0,10,"lb",1784332800000],[115,15,85.0,8,"lb",1784332800000],[116,7,45.0,8,"lb",1784332800000],[117,7,65.0,10,"lb",1784332800000],[118,7,85.0,8,"lb",1784332800000],[119,11,45.0,10,"lb",1784332800000],[120,11,65.0,10,"lb",1784332800000],[121,11,95.0,6,"lb",1784332800000],[122,11,95.0,6,"lb",1784332800000],[123,49,80.0,8,"lb",1784332800000],[124,49,80.0,8,"lb",1784332800000],[125,49,80.0,8,"lb",1784332800000],[126,50,70.0,3,"lb",1784332800000],[127,50,50.0,6,"lb",1784332800000],[128,50,40.0,8,"lb",1784332800000],[129,11,45.0,10,"lb",1784332800000],[130,11,65.0,10,"lb",1784332800000],[131,11,95.0,10,"lb",1784332800000],[132,11,115.0,6,"lb",1784332800000],[133,15,45.0,8,"lb",1784332800000],[134,15,65.0,8,"lb",1784332800000],[135,15,85.0,8,"lb",1784332800000],[136,7,45.0,10,"lb",1784332800000],[137,7,65.0,8,"lb",1784332800000],[138,7,85.0,6,"lb",1784332800000],[139,1,45.0,10,"lb",1784332800000],[140,1,65.0,10,"lb",1784332800000],[141,1,75.0,4,"lb",1784332800000],[142,8,10.0,10,"lb",1785283200000],[143,8,70.0,10,"lb",1785283200000],[144,8,90.0,8,"lb",1785283200000],[145,8,100.0,6,"lb",1785283200000],[146,1,50.0,10,"lb",1785283200000],[147,1,70.0,8,"lb",1785283200000],[148,1,80.0,4,"lb",1785283200000],[149,10,50.0,10,"lb",1785283200000],[150,10,70.0,10,"lb",1785283200000],[151,10,90.0,8,"lb",1785283200000],[152,6,75.0,6,"lb",1785283200000],[153,6,75.0,6,"lb",1785283200000],[154,6,75.0,6,"lb",1785283200000],[155,31,90.0,10,"lb",1785283200000],[156,31,90.0,8,"lb",1785283200000],[157,36,0.0,45,"lb",1785283200000],[158,36,0.0,45,"lb",1785283200000],[159,45,2.0,10,"lb",1785283200000],[160,6,105.0,6,"lb",1785456000000],[161,6,60.0,6,"lb",1785456000000],[162,6,60.0,6,"lb",1785456000000],[163,6,60.0,5,"lb",1785456000000],[164,1,50.0,10,"lb",1785456000000],[165,1,70.0,6,"lb",1785456000000],[166,1,70.0,6,"lb",1785456000000],[167,1,70.0,5,"lb",1785456000000],[168,16,30.0,6,"lb",1785456000000],[169,16,50.0,5,"lb",1785456000000],[170,16,50.0,6,"lb",1785456000000],[171,31,90.0,6,"lb",1785456000000],[172,31,90.0,6,"lb",1785456000000],[173,36,0.0,45,"lb",1785456000000],[174,36,0.0,45,"lb",1785456000000],[175,45,2.0,5,"lb",1785456000000],[211,15,65.0,5,"lb",1785542400000],[212,7,85.0,5,"lb",1785542400000],[213,31,95.0,5,"lb",1785542400000],[214,1,75.0,5,"lb",1785542400000],[215,16,30.0,5,"lb",1785542400000],[216,4,13.0,5,"lb",1785542400000],[217,9,85.0,5,"lb",1785542400000],[176,46,50.0,10,"lb",1786665600000],[177,46,70.0,8,"lb",1786665600000],[178,46,80.0,6,"lb",1786665600000],[179,46,80.0,5,"lb",1786665600000],[180,6,75.0,8,"lb",1786665600000],[181,6,60.0,5,"lb",1786665600000],[182,6,60.0,5,"lb",1786665600000],[183,8,70.0,10,"lb",1786665600000],[184,8,90.0,8,"lb",1786665600000],[185,8,100.0,6,"lb",1786665600000],[186,21,30.0,8,"lb",1786665600000],[187,21,30.0,7,"lb",1786665600000],[188,21,30.0,5,"lb",1786665600000],[189,16,20.0,8,"lb",1786665600000],[190,16,20.0,8,"lb",1786665600000],[191,16,20.0,6,"lb",1786665600000],[192,26,27.0,12,"lb",1786665600000],[193,26,23.0,12,"lb",1786665600000],[194,26,20.0,12,"lb",1786665600000],[195,26,17.0,20,"lb",1786665600000],[196,26,13.0,12,"lb",1786665600000],[197,11,0.0,10,"lb",1786665600000],[198,11,45.0,10,"lb",1786665600000],[199,11,90.0,6,"lb",1786665600000],[200,11,90.0,6,"lb",1786665600000],[201,14,30.0,8,"lb",1786665600000],[202,14,40.0,8,"lb",1786665600000],[203,14,40.0,8,"lb",1786665600000],[204,41,80.0,10,"lb",1786665600000],[205,41,110.0,10,"lb",1786665600000],[206,41,120.0,10,"lb",1786665600000],[207,41,130.0,6,"lb",1786665600000],[208,42,110.0,10,"lb",1786665600000],[209,42,120.0,8,"lb",1786665600000],[210,42,120.0,6,"lb",1786665600000],[238,44,70.0,10,"lb",1787435758813],[239,44,80.0,8,"lb",1787435869480],[240,44,90.0,6,"lb",1787436083302],[241,46,70.0,8,"lb",1787436209644],[242,46,80.0,6,"lb",1787436324698],[243,46,80.0,6,"lb",1787436440987],[244,55,40.0,10,"lb",1787436665252],[245,55,50.0,10,"lb",1787436990475],[246,55,60.0,6,"lb",1787437098944],[247,49,80.0,6,"lb",1787437322356],[248,49,80.0,6,"lb",1787437456193],[249,49,80.0,6,"lb",1787437617941],[250,46,80.0,6,"lb",1787713489277],[251,46,80.0,8,"lb",1787713673760],[252,46,80.0,6,"lb",1787713797391],[253,8,70.0,10,"lb",1787713944154],[254,8,85.0,8,"lb",1787714055503],[255,8,85.0,6,"lb",1787714168755],[256,16,20.0,10,"lb",1787886869310],[257,16,30.0,8,"lb",1787887047360],[258,16,40.0,6,"lb",1787887199746],[259,16,40.0,5,"lb",1787887307707],[260,56,110.0,6,"lb",1787887482617],[261,56,110.0,6,"lb",1787887565450],[262,56,110.0,6,"lb",1787887695966],[263,26,27.0,10,"lb",1787887842862],[264,26,30.0,8,"lb",1787887940327],[265,26,33.0,6,"lb",1787888034193],[266,15,45.0,10,"lb",1788128262343],[267,15,65.0,10,"lb",1788128428317],[268,15,85.0,10,"lb",1788128589773],[269,11,45.0,10,"lb",1788128829507],[270,11,65.0,10,"lb",1788129059184],[271,11,95.0,8,"lb",1788129179373],[272,11,115.0,4,"lb",1788129396626],[273,56,55.0,10,"lb",1788129550570],[274,56,100.0,8,"lb",1788129630965],[275,56,120.0,5,"lb",1788129755235],[277,57,20.0,10,"lb",1788129993926],[279,57,25.0,10,"lb",1788130254793],[280,1,75.0,10,"lb",1789936594526],[281,1,95.0,6,"lb",1789936604178],[282,1,95.0,6,"lb",1789936608272],[283,1,95.0,5,"lb",1789936611982],[284,26,30.0,10,"lb",1789936701600],[285,26,35.0,6,"lb",1789936842302],[286,26,35.0,6,"lb",1789937016855],[287,4,7.5,10,"lb",1789937147998],[288,4,17.5,8,"lb",1789937426358],[289,4,17.5,5,"lb",1789937665918],[290,46,5.0,10,"lb",1793236647309],[291,46,30.0,10,"lb",1793236782969],[292,46,50.0,8,"lb",1793237015880],[293,46,70.0,6,"lb",1793237135660],[294,58,10.0,10,"lb",1793237500620],[295,58,30.0,10,"lb",1793237611236],[296,58,50.0,8,"lb",1793237761786],[297,58,70.0,6,"lb",1793237888512],[298,59,65.0,10,"kg",1793238107807],[299,59,75.0,10,"kg",1793238210298],[300,59,85.0,10,"kg",1793238315876],[301,59,90.0,10,"kg",1793238417370],[302,17,0.0,10,"lb",1793238716857],[303,17,2.5,10,"lb",1793238906768],[304,17,5.0,8,"lb",1793239076407],[305,23,10.0,10,"kg",1793239234834],[306,23,15.0,10,"kg",1793239480851],[307,6,85.0,8,"lb",1793583834073],[308,6,70.0,5,"lb",1793583920115],[309,6,70.0,6,"lb",1793584722242],[310,60,0.0,8,"lb",1793584750103],[311,60,10.0,8,"lb",1793584753608],[312,60,10.0,8,"lb",1793584754863],[313,60,10.0,8,"lb",1793585303761],[314,61,0.0,8,"lb",1793585329845],[315,61,20.0,10,"lb",1793585532625],[316,61,40.0,8,"lb",1793585858946],[317,62,10.0,8,"kg",1793586289052],[318,62,25.0,12,"kg",1793586358135],[319,62,35.0,6,"kg",1793586643683],[320,60,25.0,6,"kg",1793587054336],[321,62,35.0,6,"kg",1793587076073],[322,60,25.0,6,"kg",1793587367937],[323,8,10.0,15,"kg",1793587563991],[324,8,30.0,10,"kg",1793587862958],[325,8,50.0,4,"kg",1793588032660],[326,63,0.0,6,"lb",1793902671243],[327,23,20.0,6,"kg",1793902971356],[328,63,0.0,6,"lb",1793903029105],[329,23,20.0,8,"kg",1793903086067],[330,63,5.0,5,"lb",1793903277091],[331,23,20.0,8,"kg",1793903352684],[332,64,10.0,10,"kg",1793903756386],[333,64,20.0,10,"kg",1793903881038],[334,64,30.0,6,"kg",1793904000580],[335,64,30.0,6,"kg",1793904130014],[336,65,0.0,10,"lb",1793904268512],[337,65,10.0,8,"lb",1793904326440],[338,65,20.0,8,"lb",1793904441001],[339,65,20.0,3,"lb",1793904549121],[340,66,0.0,10,"lb",1794006691716],[341,66,50.0,10,"lb",1794006739008],[342,66,70.0,10,"lb",1794007143986],[343,66,90.0,8,"lb",1794007150950],[344,66,90.0,6,"lb",1794007381038],[345,67,0.0,8,"lb",1794007456933],[346,67,50.0,6,"lb",1794007584563],[347,67,50.0,8,"lb",1794007718173],[348,67,50.0,6,"lb",1794008027883],[349,1,85.0,8,"lb",1794008131116],[350,1,100.0,3,"lb",1794008304221],[351,1,100.0,6,"lb",1794008403577],[352,1,100.0,6,"lb",1794008640899],[353,41,10.0,10,"kg",1794008798670],[354,42,10.0,10,"kg",1794008807816],[355,42,40.0,10,"kg",1794008850661],[356,41,40.0,10,"kg",1794008888024],[357,42,50.0,8,"kg",1794009028704],[358,41,50.0,8,"kg",1794009063151],[359,41,50.0,8,"kg",1794009172838],[360,31,0.0,10,"lb",1794009427541],[362,31,50.0,8,"lb",1794009732616],[363,31,90.0,8,"lb",1794009742177],[364,31,100.0,6,"lb",1794010451878],[365,8,25.0,10,"kg",1794174964333],[366,56,25.0,8,"kg",1794175032354],[367,8,50.0,6,"kg",1794175124432],[369,56,30.0,6,"kg",1794175224048],[370,8,50.0,6,"kg",1794175366044],[371,60,25.0,6,"kg",1794175547485],[372,60,25.0,6,"kg",1794175670988],[373,60,25.0,8,"kg",1794175816950],[374,56,30.0,6,"lb",1794175913331],[376,60,30.0,6,"kg",1794176063413],[377,62,35.0,6,"kg",1794176578505],[379,62,35.0,8,"kg",1794176581958]],"cardioEx":[[1,"Stationary Bike"],[2,"Treadmill"],[3,"StairMaster"],[4,"Elliptical"],[5,"Rowing Machine"]],"cardio":[[2,2,5.0,0.22,"mi",44,null,12.0,1787438427879],[3,3,25.0,null,"mi",234,79,null,1787713278600],[4,1,40.0,10.0,"mi",300,null,null,1787886795934]],"plans":[{"date":"2026-11-08","items":[[8,50.0,4,"kg"],[60,25.0,6,"kg"],[62,35.0,6,"kg"],[56,120.0,5,"lb"],[63,5.0,5,"lb"],[23,20.0,8,"kg"]]}]};
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script>
 "use strict";
 /* ================= State (local-first) ================= */
@@ -276,8 +298,206 @@ function seedState(){
     nextSetId: 100000, nextCardioId: 100000, nextExId: 1000
   };
 }
+/* ===== Firebase ===== */
+var firebaseConfig = {
+  apiKey: "AIzaSyCmQ_waEMPFNfDLOGMd35YS0PcPueMgZ5g",
+  authDomain: "workout-tracker-8cb53.firebaseapp.com",
+  projectId: "workout-tracker-8cb53",
+  storageBucket: "workout-tracker-8cb53.firebasestorage.app",
+  messagingSenderId: "414244675797",
+  appId: "1:414244675797:web:fa57f1072d81506395c25c"
+};
+var fbApp = null, fbAuth = null, fbDb = null, currentUser = null;
+var cloudSaveTimer = null, isApplyingCloudState = false, cloudSyncReady = false;
+try {
+  if (typeof firebase !== "undefined") {
+    fbApp = firebase.initializeApp(firebaseConfig);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+  }
+} catch(e) { console.warn("Firebase init failed", e); }
+
+function setSyncStatus(mode, text){
+  var el = document.getElementById("syncStatus");
+  if(!el) return;
+  el.textContent = text;
+  el.className = "sync-status" + (mode ? " " + mode : "");
+}
+function isLocalEmpty(){
+  if(!state) return true;
+  // Consider empty if no sets and no cardio beyond nothing - seed counts as data, so this is rarely true after first load.
+  // Also check raw localStorage presence via flag set in load()
+  return (!state.sets || state.sets.length===0) && (!state.cardio || state.cardio.length===0);
+}
+function serializeState(){ return JSON.parse(JSON.stringify(state)); }
+function scheduleCloudSave(){
+  if(!currentUser || !fbDb || isApplyingCloudState) return;
+  if(!cloudSyncReady) return;
+  setSyncStatus("saving","Saving\u2026");
+  if(cloudSaveTimer) clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(function(){ pushToCloud(); }, 900);
+}
+function pushToCloud(){
+  if(!currentUser || !fbDb) return Promise.resolve();
+  setSyncStatus("saving","Saving\u2026");
+  var payload = { state: serializeState(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), email: currentUser.email || null };
+  return fbDb.collection("users").doc(currentUser.uid).set(payload, {merge:true}).then(function(){
+    setSyncStatus("saved","Saved to cloud");
+  }).catch(function(err){
+    console.warn("Cloud save failed", err);
+    setSyncStatus("","Cloud save failed \u2014 saving on this device only");
+  });
+}
+function normalizeCloudState(cs){
+  if(!cs) return null;
+  // Support both {state:{...}} and direct state stored at top level
+  var s = cs.state ? cs.state : cs;
+  if(!s || !s.sets || !s.exercises) return null;
+  // Ensure arrays exist
+  s.cardio = s.cardio || []; s.cardioEx = s.cardioEx || []; s.plans = s.plans || [];
+  s.nextSetId = s.nextSetId || 100000; s.nextCardioId = s.nextCardioId || 100000; s.nextExId = s.nextExId || 1000;
+  return s;
+}
+function mergeStates(localState, cloudState){
+  function mergeById(localArr, cloudArr){
+    var map = {};
+    (cloudArr||[]).forEach(function(x){ if(x && x.id!=null) map[x.id]=x; });
+    (localArr||[]).forEach(function(x){ if(x && x.id!=null) map[x.id]=x; });
+    return Object.keys(map).map(function(k){ return map[k]; });
+  }
+  var merged = {};
+  merged.exercises = mergeById(localState.exercises, cloudState.exercises);
+  merged.sets = mergeById(localState.sets, cloudState.sets).sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
+  merged.cardioEx = mergeById(localState.cardioEx, cloudState.cardioEx);
+  merged.cardio = mergeById(localState.cardio, cloudState.cardio).sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
+  // plans merged by date - local wins on conflict, otherwise union
+  var planMap = {};
+  (cloudState.plans||[]).forEach(function(pl){ planMap[pl.date]=pl; });
+  (localState.plans||[]).forEach(function(pl){ planMap[pl.date]=pl; });
+  merged.plans = Object.keys(planMap).sort().map(function(d){ return planMap[d]; });
+  merged.nextSetId = Math.max(localState.nextSetId||100000, cloudState.nextSetId||100000);
+  merged.nextCardioId = Math.max(localState.nextCardioId||100000, cloudState.nextCardioId||100000);
+  merged.nextExId = Math.max(localState.nextExId||1000, cloudState.nextExId||1000);
+  // Ensure next IDs are beyond any existing id to avoid collisions
+  merged.sets.forEach(function(s){ if(s.id>=merged.nextSetId) merged.nextSetId=s.id+1; });
+  merged.cardio.forEach(function(c){ if(c.id>=merged.nextCardioId) merged.nextCardioId=c.id+1; });
+  return merged;
+}
+function applyCloudState(newState, shouldUpload){
+  isApplyingCloudState = true;
+  state = newState;
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  isApplyingCloudState = false;
+  try{ initSelects(); }catch(e){}
+  try{ renderPlans(); }catch(e){}
+  try{ renderAll(); }catch(e){}
+  var dn = document.getElementById("dataNote");
+  if(dn && state) dn.textContent = "Currently holding "+state.sets.length+" sets, "+state.cardio.length+" cardio logs, and "+state.plans.length+" saved plan(s).";
+  if(shouldUpload){ cloudSyncReady = true; pushToCloud(); } else { setSyncStatus("saved","Saved to cloud"); }
+}
+async function handleSignInSync(user){
+  if(!fbDb || !user) return;
+  setSyncStatus("saving","Syncing\u2026");
+  cloudSyncReady = false;
+  try {
+    var docRef = fbDb.collection("users").doc(user.uid);
+    var snap = await docRef.get();
+    var cloudState = null;
+    if(snap.exists){
+      cloudState = normalizeCloudState(snap.data());
+    }
+    var localEmpty = isLocalEmpty();
+    var cloudEmpty = !cloudState || ((cloudState.sets||[]).length===0 && (cloudState.cardio||[]).length===0);
+    if(cloudState && localEmpty && !cloudEmpty){
+      // Cloud has data, local empty -> load cloud
+      applyCloudState(cloudState, false);
+      cloudSyncReady = true;
+    } else if(!cloudState || cloudEmpty){
+      if(!localEmpty){
+        // First sync: upload local, never overwrite
+        cloudSyncReady = true;
+        await pushToCloud();
+      } else if(cloudState){
+        applyCloudState(cloudState, false);
+        cloudSyncReady = true;
+      } else {
+        cloudSyncReady = true;
+        await pushToCloud();
+      }
+    } else {
+      // Both have data -> merge by id
+      var merged = mergeStates(state, cloudState);
+      var hasNew = merged.sets.length !== state.sets.length || merged.sets.length !== cloudState.sets.length || merged.cardio.length !== (state.cardio||[]).length;
+      applyCloudState(merged, true);
+      cloudSyncReady = true;
+      if(!hasNew) setSyncStatus("saved","Saved to cloud");
+    }
+  } catch(err){
+    console.warn("Sync on sign-in failed", err);
+    cloudSyncReady = true;
+    setSyncStatus("","Signed in \u2014 saving on this device (cloud sync retry on next save)");
+  }
+}
+function initFirebaseAuth(){
+  var signInBtn = document.getElementById("signInBtn");
+  var signOutBtn = document.getElementById("signOutBtn");
+  var authUserEl = document.getElementById("authUser");
+  if(!fbAuth){
+    if(signInBtn) signInBtn.addEventListener("click", function(){ toast("Sign-in is unavailable right now \u2014 your data still saves on this device."); });
+    setSyncStatus("","Signed out \u2014 saving on this device only");
+    return;
+  }
+  // Handle redirect result (fallback flow)
+  if(fbAuth.getRedirectResult){
+    fbAuth.getRedirectResult().catch(function(e){ console.warn("Redirect sign-in", e); });
+  }
+  if(signInBtn){
+    signInBtn.addEventListener("click", function(){
+      var provider = new firebase.auth.GoogleAuthProvider();
+      fbAuth.signInWithPopup(provider).catch(function(err){
+        console.warn("Popup sign-in failed", err);
+        if(err && (err.code==="auth/popup-blocked" || err.code==="auth/popup-closed-by-user" || err.code==="auth/cancelled-popup-request")){
+          // Fall back to redirect if popup was blocked
+          if(err.code==="auth/popup-blocked"){
+            fbAuth.signInWithRedirect(provider).catch(function(e2){ toast("Sign-in failed. Please try again."); console.warn(e2); });
+          } else {
+            toast("Sign-in was cancelled.");
+          }
+        } else if(err && err.code==="auth/unauthorized-domain"){
+          toast("This site isn't authorized for sign-in yet. Your data still saves on this device.");
+        } else {
+          // Generic fallback: try redirect once for popup-related failures in iframes
+          try { fbAuth.signInWithRedirect(provider); } catch(e3){ toast("Sign-in failed. Please try again."); }
+        }
+      });
+    });
+  }
+  if(signOutBtn){
+    signOutBtn.addEventListener("click", function(){ fbAuth.signOut(); });
+  }
+  fbAuth.onAuthStateChanged(function(user){
+    currentUser = user || null;
+    if(user){
+      if(signInBtn) signInBtn.style.display="none";
+      if(signOutBtn) signOutBtn.style.display="";
+      if(authUserEl){ authUserEl.style.display=""; authUserEl.innerHTML = "Signed in as <b>"+ (user.displayName ? escapeHtml(user.displayName) : "") +"</b>"+ (user.email ? "<br>"+escapeHtml(user.email) : ""); }
+      setSyncStatus("saving","Syncing\u2026");
+      handleSignInSync(user);
+    } else {
+      cloudSyncReady = false;
+      if(cloudSaveTimer) clearTimeout(cloudSaveTimer);
+      if(signInBtn) signInBtn.style.display="";
+      if(signOutBtn) signOutBtn.style.display="none";
+      if(authUserEl){ authUserEl.style.display="none"; authUserEl.textContent=""; }
+      setSyncStatus("","Signed out \u2014 saving on this device only");
+    }
+  });
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
 function save(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ /* storage blocked: in-memory still works */ }
+  scheduleCloudSave();
 }
 function load(){
   try{
@@ -754,6 +974,7 @@ if(!$("planItems").children.length) $("planItems").appendChild(planItemRow(state
 renderPlans();
 renderAll();
 $("dataNote").textContent="Currently holding "+state.sets.length+" sets, "+state.cardio.length+" cardio logs, and "+state.plans.length+" saved plan(s) in this browser.";
+initFirebaseAuth();
 </script>
 </body>
 </html>
