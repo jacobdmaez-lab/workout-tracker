@@ -133,6 +133,23 @@
   .planitem{display:flex;gap:8px;align-items:end;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
   .planitem .grow{flex:2 1 160px}.planitem .sm{flex:1 1 70px}
   .planitem label.fl{margin-top:0}
+  /* shared plans */
+  .sharecode{font-family:"Barlow Condensed",sans-serif;font-size:44px;font-weight:700;letter-spacing:.22em;line-height:1;
+    background:var(--accent-light);color:var(--accent-hover);border:1px dashed var(--accent);border-radius:12px;
+    padding:14px 10px 10px;text-align:center;user-select:all;word-break:break-all}
+  @media (prefers-color-scheme: dark){.sharecode{color:var(--accent-glow)}}
+  .joinrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .joinrow input{flex:2 1 160px;text-transform:uppercase;letter-spacing:.18em;font-weight:700}
+  .joinrow .btn{flex:1 1 120px}
+  .memberchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .memberchip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:600}
+  .memberchip.me{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+  .sharedlist-item{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px}
+  .sharedlist-item .grow{flex:1 1 160px;min-width:0}
+  .sharedlist-item .code{font-family:"Barlow Condensed",sans-serif;font-weight:700;letter-spacing:.14em;color:var(--accent)}
+  .mvbtn{flex:none;background:none;border:1px solid var(--line);color:var(--ink2);border-radius:8px;width:32px;height:32px;font-size:15px;cursor:pointer;line-height:1}
+  .mvbtn:hover{color:var(--accent);border-color:var(--accent)}
+  .livenote{font-size:13px;font-weight:600;color:var(--accent);margin-top:8px;min-height:18px}
   footer{margin-top:26px;color:var(--ink2);font-size:13px;text-align:center}
   .grouplist{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
   .gchip{border:1px solid var(--line-strong);background:var(--panel);color:var(--ink2);border-radius:999px;
@@ -222,6 +239,51 @@
       <div class="btnrow">
         <button class="btn secondary" id="addPlanItemBtn" type="button">+ Add exercise</button>
         <button class="btn" id="savePlanBtn" type="button">Save plan</button>
+      </div>
+      <div class="btnrow">
+        <button class="btn secondary" id="createSharedBtn" type="button">Create shared plan</button>
+      </div>
+      <p class="note">Create shared plan makes a copy of the plan above (for its date) that a friend can join with a code and build with you. Your personal plan stays private either way.</p>
+    </div>
+    <div class="card" id="sharedCard">
+      <h2>Plan together</h2>
+      <p class="sub">Share a plan code with a friend and build the workout together — changes show up live for both of you. Only the plan is shared; each person&rsquo;s sets and history stay private.</p>
+      <div id="sharedSignedOut">
+        <p class="empty">Sign in with Google to create or join a shared plan.</p>
+      </div>
+      <div id="sharedSignedIn" style="display:none">
+        <label class="fl" for="joinCodeInput">Join a plan with a code</label>
+        <div class="joinrow">
+          <input id="joinCodeInput" type="text" placeholder="e.g. K7MP2Q" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" />
+          <button class="btn" id="joinSharedBtn" type="button">Join plan</button>
+        </div>
+        <p class="note">Codes stay valid — use the same code to rejoin the plan later.</p>
+        <div id="mySharedWrap">
+          <h3>Your shared plans</h3>
+          <div id="mySharedList"><p class="empty">No shared plans yet.</p></div>
+        </div>
+        <div id="sharedActive" style="display:none">
+          <h3>Shared plan</h3>
+          <label class="fl">Share this code with your workout partner</label>
+          <div class="sharecode" id="sharedCodeDisplay">------</div>
+          <div class="btnrow">
+            <button class="btn secondary" id="copySharedCodeBtn" type="button">Copy code</button>
+            <button class="btn ghost" id="closeSharedBtn" type="button">Close plan</button>
+          </div>
+          <div class="livenote" id="sharedLiveNote" role="status"></div>
+          <label class="fl">Who&rsquo;s in this plan</label>
+          <div class="memberchips" id="sharedMembers"></div>
+          <div class="grid2">
+            <div><label class="fl" for="sharedDateInput">Date</label><input id="sharedDateInput" type="date" /></div>
+            <div><label class="fl" for="sharedTitleInput">Title</label><input id="sharedTitleInput" type="text" placeholder="e.g. Leg day" autocomplete="off" /></div>
+          </div>
+          <div id="sharedItems"></div>
+          <div class="btnrow">
+            <button class="btn secondary" id="addSharedItemBtn" type="button">+ Add exercise</button>
+            <button class="btn" id="startSharedBtn" type="button">Start workout</button>
+          </div>
+          <p class="note">Add, remove, or reorder exercises — edits save and sync to everyone in the plan as you make them. Starting the workout loads it into LIFT on your device only, and you log your own sets.</p>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -967,7 +1029,7 @@ function planItemRow(item){
 /* After the exercise list changes, rebuild each PLAN row's group chips +
    exercise dropdown in place, keeping the exercise it currently has selected. */
 function refreshPlanItemSelects(){
-  document.querySelectorAll("#planItems .planitem").forEach(function(div){
+  document.querySelectorAll("#planItems .planitem, #sharedItems .planitem").forEach(function(div){
     var exSel=div.querySelector(".pi-ex");
     if(!exSel || !div.querySelector(".pi-groups")) return;
     var curEx=exSel.value?+exSel.value:null;
@@ -1456,6 +1518,416 @@ renderAll();
 $("dataNote").textContent="Currently holding "+state.sets.length+" sets, "+state.cardio.length+" cardio logs, and "+state.plans.length+" saved plan(s) in this browser.";
 initFirebaseAuth();
 loadPublicExercises();
+
+/* ================= SHARED PLANS (Firestore collection: sharedPlans) =================
+   One document per shared plan, document id = its share code. The doc holds:
+   { code, date, title, items:[{ex, exName, exGroup, w, r, u}], members:[{uid, name}],
+     memberUids:[uid...], ownerUid, createdAt, updatedAt }.
+   Only the plan is shared — sets/cardio/history never leave the user's own doc.
+   Edits sync live via an onSnapshot listener; local edits push (debounced) to the doc. */
+var SHARE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; /* no 0/O, 1/I/L — nothing easily confused */
+var sharedPlan = null;        /* latest data of the open shared plan doc */
+var sharedDocRef = null;      /* Firestore ref of the open shared plan */
+var sharedUnsub = null;       /* onSnapshot unsubscribe for the open plan */
+var mySharedUnsub = null;     /* onSnapshot unsubscribe for "your shared plans" */
+var sharedPushTimer = null;
+var sharedLastPushedJSON = "";
+var sharedPendingRemote = null; /* remote snapshot held back while this user is mid-edit */
+
+function generateShareCode(){
+  var code = "";
+  for(var i=0;i<6;i++) code += SHARE_ALPHABET.charAt(Math.floor(Math.random()*SHARE_ALPHABET.length));
+  return code;
+}
+function normalizeShareCode(raw){
+  return String(raw||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+}
+function myMemberEntry(){
+  if(!currentUser) return null;
+  return { uid: currentUser.uid, name: currentUser.displayName || currentUser.email || "Workout partner" };
+}
+function collectItemsFrom(container){
+  var items = [];
+  if(!container) return items;
+  container.querySelectorAll(".planitem").forEach(function(row){
+    var exSel = row.querySelector(".pi-ex");
+    var exId = exSel ? +exSel.value : 0;
+    if(!exId) return;
+    var ex = exById(exId);
+    items.push({
+      ex: exId,
+      exName: ex.name,
+      exGroup: ex.group,
+      w: parseFloat(row.querySelector(".pi-w").value) || null,
+      r: parseInt(row.querySelector(".pi-r").value, 10) || null,
+      u: row.querySelector(".pi-u").value
+    });
+  });
+  return items;
+}
+/* A partner's exercise ids come from the shared catalog, but resolve by name
+   first so a plan still lines up if local ids ever differ. */
+function resolveSharedItem(item){
+  if(!item) return null;
+  var found = null;
+  if(item.exName){
+    state.exercises.forEach(function(e){ if(!found && e.name.toLowerCase() === String(item.exName).toLowerCase()) found = e; });
+  }
+  if(!found && item.ex){
+    state.exercises.forEach(function(e){ if(!found && e.id === item.ex) found = e; });
+  }
+  if(!found) return null;
+  return { ex: found.id, w: item.w != null ? item.w : null, r: item.r != null ? item.r : null, u: item.u || "lb" };
+}
+function sharedSnapshotJSON(data){
+  return JSON.stringify({ items: data.items || [], date: data.date || "", title: data.title || "" });
+}
+function setSharedLiveNote(txt){ var el = $("sharedLiveNote"); if(el) el.textContent = txt || ""; }
+
+function renderSharedMembers(){
+  var box = $("sharedMembers");
+  if(!box || !sharedPlan) return;
+  var members = sharedPlan.members || [];
+  if(!members.length){ box.innerHTML = '<span class="memberchip">Just you so far</span>'; return; }
+  box.innerHTML = members.map(function(m){
+    var me = currentUser && m.uid === currentUser.uid;
+    return '<span class="memberchip'+(me ? " me" : "")+'">'+esc(m.name || "Workout partner")+(me ? " (you)" : "")+'</span>';
+  }).join("");
+}
+function addSharedReorderButtons(div){
+  var del = div.querySelector(".del");
+  if(!del || div.querySelector(".mv-up")) return;
+  var up = document.createElement("button");
+  up.type = "button"; up.className = "mvbtn mv-up"; up.textContent = "\u2191"; up.setAttribute("aria-label","Move exercise up");
+  var down = document.createElement("button");
+  down.type = "button"; down.className = "mvbtn mv-down"; down.textContent = "\u2193"; down.setAttribute("aria-label","Move exercise down");
+  del.parentNode.insertBefore(up, del);
+  del.parentNode.insertBefore(down, del);
+}
+function renderSharedItems(){
+  var box = $("sharedItems");
+  if(!box || !sharedPlan) return;
+  box.innerHTML = "";
+  (sharedPlan.items || []).forEach(function(it){
+    var local = resolveSharedItem(it);
+    var row = planItemRow(local || { ex: it.ex, w: it.w, r: it.r, u: it.u });
+    addSharedReorderButtons(row);
+    box.appendChild(row);
+  });
+  if(!box.children.length){
+    var row0 = planItemRow(null);
+    addSharedReorderButtons(row0);
+    box.appendChild(row0);
+  }
+}
+function renderSharedActive(rebuildItems){
+  var wrap = $("sharedActive");
+  if(!wrap) return;
+  if(!sharedPlan){ wrap.style.display = "none"; return; }
+  wrap.style.display = "";
+  $("sharedCodeDisplay").textContent = sharedPlan.code || "------";
+  var dIn = $("sharedDateInput"), tIn = $("sharedTitleInput");
+  if(document.activeElement !== dIn) dIn.value = sharedPlan.date || "";
+  if(document.activeElement !== tIn) tIn.value = sharedPlan.title || "";
+  renderSharedMembers();
+  if(rebuildItems) renderSharedItems();
+}
+function detachSharedPlan(){
+  if(sharedUnsub){ try{ sharedUnsub(); }catch(e){} sharedUnsub = null; }
+  if(sharedPushTimer){ clearTimeout(sharedPushTimer); sharedPushTimer = null; }
+  sharedPlan = null; sharedDocRef = null; sharedPendingRemote = null; sharedLastPushedJSON = "";
+  renderSharedActive(false);
+}
+function subscribeToSharedPlan(ref, initialData){
+  detachSharedPlan();
+  sharedDocRef = ref;
+  if(initialData){
+    sharedPlan = initialData;
+    sharedLastPushedJSON = sharedSnapshotJSON(initialData);
+    renderSharedActive(true);
+  }
+  sharedUnsub = ref.onSnapshot(function(snap){
+    if(!snap.exists){ toast("That shared plan is no longer available."); detachSharedPlan(); return; }
+    var data = snap.data() || {};
+    data.code = data.code || snap.id;
+    var incoming = sharedSnapshotJSON(data);
+    var focusInside = document.activeElement && $("sharedActive") && $("sharedActive").contains(document.activeElement)
+      && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "SELECT");
+    if(sharedPlan && incoming === sharedLastPushedJSON){
+      /* Echo of our own edit (or no content change): refresh members only. */
+      sharedPlan = data;
+      renderSharedMembers();
+      return;
+    }
+    if(sharedPlan && focusInside){
+      /* Partner edited while this user is mid-edit — hold the rebuild so
+         their typing isn't wiped; it applies once their edit pushes. */
+      sharedPendingRemote = data;
+      sharedPlan = data;
+      renderSharedMembers();
+      setSharedLiveNote("Your partner just updated the plan — their changes will appear when you finish editing.");
+      return;
+    }
+    var isFirst = !sharedPlan;
+    var changedByPartner = sharedPlan && currentUser && data.lastEditBy && data.lastEditBy !== currentUser.uid;
+    sharedPlan = data;
+    sharedLastPushedJSON = incoming;
+    sharedPendingRemote = null;
+    renderSharedActive(true);
+    if(!isFirst) setSharedLiveNote(changedByPartner ? "Plan updated by your partner just now." : "Plan is up to date — changes sync live.");
+  }, function(err){
+    console.warn("Shared plan listener failed", err);
+    toast("Live sync for the shared plan hit a problem — reopen the plan to reconnect.");
+  });
+}
+function scheduleSharedPush(){
+  if(!sharedPlan || !sharedDocRef) return;
+  if(sharedPushTimer) clearTimeout(sharedPushTimer);
+  sharedPushTimer = setTimeout(pushSharedUpdate, 900);
+}
+function pushSharedUpdate(){
+  sharedPushTimer = null;
+  if(!sharedPlan || !sharedDocRef || !currentUser) return;
+  var items = collectItemsFrom($("sharedItems"));
+  var date = $("sharedDateInput").value || sharedPlan.date || todayKey();
+  var title = $("sharedTitleInput").value.trim();
+  sharedLastPushedJSON = sharedSnapshotJSON({ items: items, date: date, title: title });
+  sharedDocRef.update({
+    items: items, date: date, title: title,
+    lastEditBy: currentUser.uid,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    setSharedLiveNote("Saved — your partner sees this now.");
+    if(sharedPendingRemote){
+      var pending = sharedPendingRemote; sharedPendingRemote = null;
+      /* Only rebuild if the held-back snapshot differs from what we just saved. */
+      if(sharedSnapshotJSON(pending) !== sharedLastPushedJSON){
+        sharedPlan = pending; sharedLastPushedJSON = sharedSnapshotJSON(pending);
+        renderSharedActive(true);
+      }
+    }
+  }).catch(function(err){
+    console.warn("Shared plan save failed", err);
+    setSharedLiveNote("Couldn't save that change — check your connection and edit again.");
+  });
+}
+/* Create: copy the plan currently being built (its date + rows) into sharedPlans. */
+$("createSharedBtn").addEventListener("click", function(){
+  if(!currentUser){ toast("Sign in with Google to create a shared plan."); return; }
+  if(!fbDb){ toast("Sharing is unavailable right now — try again in a moment."); return; }
+  var date = $("planDate").value;
+  if(!date){ toast("Pick a date for the plan first."); return; }
+  var items = collectItemsFrom($("planItems"));
+  if(!items.length){ toast("Add at least one exercise to the plan above first."); return; }
+  var me = myMemberEntry();
+  var title = "Workout — " + fmtDay(date);
+  var attempts = 0;
+  function tryCreate(){
+    attempts++;
+    var code = generateShareCode();
+    var ref = fbDb.collection("sharedPlans").doc(code);
+    ref.get().then(function(snap){
+      if(snap.exists){
+        if(attempts < 10) return tryCreate();
+        toast("Couldn't generate a fresh code — please try again.");
+        return;
+      }
+      var data = {
+        code: code, date: date, title: title, items: items,
+        members: [me], memberUids: [me.uid], ownerUid: me.uid, lastEditBy: me.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      ref.set(data).then(function(){
+        subscribeToSharedPlan(ref, data);
+        loadMySharedPlans();
+        gotoTab("plan");
+        setSharedLiveNote("Shared plan created — send the code to your partner.");
+        toast("Shared plan created — code " + code);
+        document.getElementById("sharedCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      }).catch(function(err){
+        console.warn("Create shared plan failed", err);
+        toast("Couldn't create the shared plan — please try again.");
+      });
+    }).catch(function(err){
+      console.warn("Share code check failed", err);
+      toast("Couldn't create the shared plan — please try again.");
+    });
+  }
+  tryCreate();
+});
+/* Join: look the code up (doc id = code; fall back to a code field query),
+   add the current user as a member, then subscribe live. */
+function joinSharedPlanByCode(rawCode){
+  if(!currentUser){ toast("Sign in with Google to join a shared plan."); return; }
+  if(!fbDb){ toast("Sharing is unavailable right now — try again in a moment."); return; }
+  var code = normalizeShareCode(rawCode);
+  if(code.length !== 6){ toast("Enter the 6-character code from your friend."); $("joinCodeInput").focus(); return; }
+  var me = myMemberEntry();
+  function openFound(ref, data){
+    data.code = data.code || ref.id;
+    var uids = data.memberUids || [];
+    var finish = function(){
+      subscribeToSharedPlan(ref, data);
+      loadMySharedPlans();
+      gotoTab("plan");
+      setSharedLiveNote("You're in — you're building this plan together now.");
+      toast("Joined shared plan " + data.code + ".");
+      document.getElementById("sharedCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    if(uids.indexOf(me.uid) >= 0){ finish(); return; }
+    var members = (data.members || []).concat([me]);
+    ref.update({
+      members: members, memberUids: uids.concat([me.uid]),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      data.members = members; data.memberUids = uids.concat([me.uid]);
+      finish();
+    }).catch(function(err){
+      console.warn("Join shared plan failed", err);
+      toast("Found the plan, but joining it failed — please try again.");
+    });
+  }
+  var ref = fbDb.collection("sharedPlans").doc(code);
+  ref.get().then(function(snap){
+    if(snap.exists){ openFound(ref, snap.data() || {}); return; }
+    fbDb.collection("sharedPlans").where("code", "==", code).limit(1).get().then(function(qs){
+      if(qs.empty){ toast("No shared plan found for code " + code + " — check the code and try again."); return; }
+      var doc = qs.docs[0];
+      openFound(doc.ref, doc.data() || {});
+    }).catch(function(err){
+      console.warn("Join lookup failed", err);
+      toast("Couldn't look up that code — please try again.");
+    });
+  }).catch(function(err){
+    console.warn("Join lookup failed", err);
+    toast("Couldn't look up that code — please try again.");
+  });
+}
+$("joinSharedBtn").addEventListener("click", function(){ joinSharedPlanByCode($("joinCodeInput").value); });
+$("joinCodeInput").addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); joinSharedPlanByCode(this.value); } });
+$("copySharedCodeBtn").addEventListener("click", function(){
+  if(!sharedPlan || !sharedPlan.code) return;
+  var code = sharedPlan.code;
+  function done(){ toast("Code " + code + " copied — send it to your partner."); }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(done, function(){ fallbackCopy(); });
+  } else fallbackCopy();
+  function fallbackCopy(){
+    var ta = document.createElement("textarea");
+    ta.value = code; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); done(); }catch(e){ toast("Copy the code shown above: " + code); }
+    ta.remove();
+  }
+});
+$("closeSharedBtn").addEventListener("click", function(){
+  detachSharedPlan();
+  toast("Closed the shared plan — rejoin any time with its code.");
+});
+$("addSharedItemBtn").addEventListener("click", function(){
+  var row = planItemRow(null);
+  addSharedReorderButtons(row);
+  $("sharedItems").appendChild(row);
+  scheduleSharedPush();
+});
+$("sharedItems").addEventListener("input", scheduleSharedPush);
+$("sharedItems").addEventListener("change", scheduleSharedPush);
+$("sharedItems").addEventListener("click", function(ev){
+  var up = ev.target.closest(".mv-up"), down = ev.target.closest(".mv-down"), del = ev.target.closest(".del");
+  var row = ev.target.closest(".planitem");
+  if(up && row){
+    var prev = row.previousElementSibling;
+    if(prev){ row.parentNode.insertBefore(row, prev); scheduleSharedPush(); }
+  } else if(down && row){
+    var next = row.nextElementSibling;
+    if(next){ row.parentNode.insertBefore(next, row); scheduleSharedPush(); }
+  } else if(del){
+    /* planItemRow's own handler removes the row; push right after it runs. */
+    setTimeout(scheduleSharedPush, 60);
+  } else if(ev.target.closest(".gchip")){
+    /* Muscle-group chips rebuild the row's exercise dropdown without firing
+       input/change on the container; push once that settles. */
+    setTimeout(scheduleSharedPush, 60);
+  }
+});
+$("sharedActive").addEventListener("focusout", function(){
+  /* If a partner update was held back while editing, apply it once focus
+     leaves the shared editor and no local push is pending. */
+  setTimeout(function(){
+    if(!sharedPendingRemote || sharedPushTimer) return;
+    var ae = document.activeElement;
+    var inside = ae && $("sharedActive").contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT");
+    if(inside) return;
+    var pending = sharedPendingRemote; sharedPendingRemote = null;
+    sharedPlan = pending; sharedLastPushedJSON = sharedSnapshotJSON(pending);
+    renderSharedActive(true);
+    setSharedLiveNote("Plan updated by your partner.");
+  }, 250);
+});
+$("sharedDateInput").addEventListener("change", scheduleSharedPush);
+$("sharedTitleInput").addEventListener("input", scheduleSharedPush);
+$("startSharedBtn").addEventListener("click", function(){
+  if(!sharedPlan){ toast("Open a shared plan first."); return; }
+  var resolved = (sharedPlan.items || []).map(resolveSharedItem).filter(function(x){ return !!x; });
+  if(!resolved.length){ toast("This shared plan has no exercises yet."); return; }
+  queue = { date: sharedPlan.date || todayKey(), items: resolved.map(function(i){ return i.ex; }) };
+  gotoTab("lift"); renderQueue();
+  var first = resolved[0];
+  selectExerciseById(first.ex); typedDirty = false; refreshHints(false);
+  if(first.w){ $("inWeight").value = first.w; $("inReps").value = first.r || ""; $("inUnit").value = first.u; typedDirty = true; }
+  toast("Shared workout loaded — " + resolved.length + " exercises. You log your own sets here.");
+});
+/* "Your shared plans" — every sharedPlans doc this user is a member of. */
+function loadMySharedPlans(){
+  var box = $("mySharedList");
+  if(!box) return;
+  if(mySharedUnsub){ try{ mySharedUnsub(); }catch(e){} mySharedUnsub = null; }
+  if(!currentUser || !fbDb){ box.innerHTML = '<p class="empty">No shared plans yet.</p>'; return; }
+  mySharedUnsub = fbDb.collection("sharedPlans").where("memberUids", "array-contains", currentUser.uid)
+    .onSnapshot(function(qs){
+      if(qs.empty){ box.innerHTML = '<p class="empty">No shared plans yet — create one above or join with a code.</p>'; return; }
+      var docs = [];
+      qs.forEach(function(d){ var data = d.data() || {}; data.code = data.code || d.id; docs.push({ ref: d.ref, data: data }); });
+      docs.sort(function(a, b){ return (a.data.date || "") < (b.data.date || "") ? 1 : -1; });
+      box.innerHTML = "";
+      docs.forEach(function(entry){
+        var data = entry.data;
+        var names = (data.members || []).map(function(m){ return m.name || "Partner"; }).join(", ");
+        var div = document.createElement("div");
+        div.className = "sharedlist-item";
+        div.innerHTML = '<div class="grow"><b>'+esc(data.title || (data.date ? fmtDay(data.date) : "Shared workout"))+'</b><br>'+
+          '<span class="code">'+esc(data.code)+'</span> <span class="setmeta">'+(data.date ? "· " + fmtDay(data.date) : "")+' · '+((data.items || []).length)+' exercises'+(names ? ' · with '+esc(names) : "")+'</span></div>';
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.className = "btn small"; btn.textContent = "Open";
+        btn.addEventListener("click", function(){ subscribeToSharedPlan(entry.ref, entry.data); setSharedLiveNote("Plan is up to date — changes sync live."); });
+        div.appendChild(btn);
+        box.appendChild(div);
+      });
+    }, function(err){
+      console.warn("Shared plans list failed", err);
+      box.innerHTML = '<p class="empty">Couldn\'t load your shared plans right now.</p>';
+    });
+}
+function renderSharedAuth(){
+  var out = $("sharedSignedOut"), inn = $("sharedSignedIn");
+  if(!out || !inn) return;
+  if(currentUser){ out.style.display = "none"; inn.style.display = ""; }
+  else {
+    out.style.display = ""; inn.style.display = "none";
+    detachSharedPlan();
+    if(mySharedUnsub){ try{ mySharedUnsub(); }catch(e){} mySharedUnsub = null; }
+  }
+}
+if(fbAuth){
+  fbAuth.onAuthStateChanged(function(user){
+    /* currentUser is set by initFirebaseAuth's own listener; read it fresh here. */
+    renderSharedAuth();
+    if(user) loadMySharedPlans();
+  });
+} else {
+  renderSharedAuth();
+}
 </script>
 </body>
 </html>
