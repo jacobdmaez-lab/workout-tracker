@@ -269,7 +269,7 @@
       <input id="reportDate" type="date" />
       <div id="reportBody"></div>
       <div class="btnrow">
-        <button class="btn secondary" id="dlReportBtn" type="button">Download report (.txt)</button>
+        <button class="btn secondary" id="dlReportBtn" type="button">Download report (.jpg)</button>
         <button class="btn ghost" id="copyReportBtn" type="button">Copy summary</button>
       </div>
     </div>
@@ -1067,26 +1067,70 @@ function cardioListHTML(list){
 }
 
 /* ================= REPORT ================= */
-var MUSCLE_MAP={Chest:["chest"],"Back":["lats","traps"],"Legs":["quads","calves"],"Shoulders":["delts"],"Biceps":["biceps"],"Triceps":["triceps"],"Glutes":["glutes"],"Core":["abs"]};
-function bodySVG(front, intensity){
-  function m(id,x,y,rx,ry){ var o=intensity[id]||0; return '<ellipse class="muscle" cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" '+(o>0?'style="fill:var(--clay);fill-opacity:'+(0.25+0.75*o).toFixed(2)+'"':"")+'/>'; }
-  var s='<svg width="130" height="240" viewBox="0 0 130 240" role="img" aria-label="'+(front?"Front":"Back")+' body map">';
-  s+='<circle class="muscle" cx="65" cy="18" r="12"/>';
+/* Body map — the detailed front/back anatomy illustration from the previous
+   tracker (gym-workout-tracker), driven by per-group intensity (0..1).
+   Worked muscles are filled with the clay accent; `pal` supplies the colors
+   (CSS variables on the page, fixed hex when rasterizing for the JPG). */
+var BODY_PAGE_PAL={bodyFill:"var(--panel)",bodyStroke:"var(--line)",inactive:"var(--panel2)",inactiveStroke:"var(--line-strong)",active:"var(--clay)",activeAlt:"var(--clay-deep)",activeStroke:"var(--clay-deep)",detailOn:"var(--clay-deep)",detailOff:"var(--line-strong)"};
+var BODY_EXPORT_PAL={bodyFill:"#FFFBF9",bodyStroke:"#D6C2BC",inactive:"#E6DDD6",inactiveStroke:"#C4B0AA",active:"#BD7B75",activeAlt:"#7A4A48",activeStroke:"#7A4A48",detailOn:"#7A4A48",detailOff:"#BDA9A3"};
+var BODY_PATH="M 94 38 C 86 40 77 42 68 45 C 59 46 53 50 51 56 C 49 64 52 73 55 82 C 53 90 49 101 46 111 L 39 135 C 37 139 34 142 34 147 C 34 152 38 154 42 152 C 46 150 48 145 50 141 L 58 121 C 62 112 64 101 65 91 L 69 75 C 72 86 73 98 73 111 C 73 123 76 134 75 145 C 74 153 72 160 71 168 L 69 190 C 68 199 70 206 73 211 L 70 232 C 69 241 71 250 72 257 L 67 262 C 65 265 68 267 73 267 L 80 267 C 83 266 84 263 83 258 L 84 236 L 82 212 C 84 195 87 174 92 158 L 100 163 L 108 158 C 113 174 116 195 118 212 L 116 236 L 117 258 C 116 263 117 266 120 267 L 127 267 C 132 267 135 265 133 262 L 128 257 C 129 250 131 241 130 232 L 127 211 C 130 206 132 199 131 190 L 129 168 C 128 160 126 153 125 145 C 124 134 127 123 127 111 C 127 98 128 86 131 75 L 135 91 C 136 101 138 112 142 121 L 150 141 C 152 145 154 150 158 152 C 162 154 166 152 166 147 C 166 142 163 139 161 135 L 154 111 C 151 101 147 90 145 82 C 148 73 151 64 149 56 C 147 50 141 46 132 45 C 123 42 114 40 106 38 Z";
+function bodySVG(front, byGroup, pal, big){
+  pal=pal||BODY_PAGE_PAL; byGroup=byGroup||{};
+  function inten(names){ var v=0; (names||[]).forEach(function(n){ if(byGroup[n]&&byGroup[n]>v) v=byGroup[n]; }); return v; }
+  function mst(names, alt){
+    var v=inten(names);
+    if(v>0) return 'style="fill:'+(alt?pal.activeAlt:pal.active)+';fill-opacity:'+(0.45+0.55*v).toFixed(2)+';stroke:'+pal.activeStroke+';stroke-width:0.78;stroke-linejoin:round;stroke-linecap:round"';
+    return 'style="fill:'+pal.inactive+';stroke:'+pal.inactiveStroke+';stroke-width:0.78;stroke-linejoin:round;stroke-linecap:round"';
+  }
+  function P(d, names, alt){ return '<path d="'+d+'" '+mst(names,alt)+'/>'; }
+  function detailLines(ds, on, op){ return '<g fill="none" stroke="'+(on?pal.detailOn:pal.detailOff)+'" stroke-width="0.42" opacity="'+op+'" stroke-linecap="round">'+ds.map(function(d){return '<path d="'+d+'"/>';}).join("")+"</g>"; }
+  var s='<svg xmlns="http://www.w3.org/2000/svg" width="'+(big?400:200)+'" height="'+(big?556:278)+'" viewBox="0 0 200 278"'+(big?'':' style="width:168px;max-width:42vw;height:auto"')+' role="img" aria-label="'+(front?"Front":"Back")+' body map">';
+  /* Silhouette: head, neck, body outline, forearm/hand detail lines. */
+  s+='<ellipse cx="100" cy="15.5" rx="10.8" ry="13.2" style="fill:'+pal.bodyFill+';stroke:'+pal.bodyStroke+';stroke-width:0.85"/>';
+  s+='<path d="M 93 26 L 92 39 L 108 39 L 107 26 Z" style="fill:'+pal.bodyFill+';stroke:'+pal.bodyStroke+';stroke-width:0.85;stroke-linejoin:round"/>';
+  s+='<path d="'+BODY_PATH+'" style="fill:'+pal.bodyFill+';stroke:'+pal.bodyStroke+';stroke-width:0.9;stroke-linejoin:round;stroke-linecap:round"/>';
+  s+='<g fill="none" stroke="'+pal.bodyStroke+'" stroke-width="0.58" stroke-linecap="round" opacity="0.9">'
+    +'<path d="M 49 104 Q 52 116 44 135"/><path d="M 56 105 Q 58 117 49 139"/>'
+    +'<path d="M 151 104 Q 148 116 156 135"/><path d="M 144 105 Q 142 117 151 139"/>'
+    +'<path d="M 38 143 L 36 151 M 41 142 L 40 153 M 44 143 L 44 151 M 162 143 L 164 151 M 159 142 L 160 153 M 156 143 L 156 151"/></g>';
   if(front){
-    s+=m("delts",38,44,11,8)+m("delts",92,44,11,8);
-    s+=m("chest",65,48,20,10);
-    s+=m("biceps",30,72,7,14)+m("biceps",100,72,7,14);
-    s+=m("abs",65,78,13,20);
-    s+=m("quads",52,128,11,30)+m("quads",78,128,11,30);
-    s+=m("calves",52,182,8,18)+m("calves",78,182,8,18);
+    s+=P("M 68 46 C 59 46 53 50 52 57 C 52 63 56 68 63 70 L 70 64 L 72 52 Z",["Shoulders"],true);
+    s+=P("M 132 46 C 141 46 147 50 148 57 C 148 63 144 68 137 70 L 130 64 L 128 52 Z",["Shoulders"],true);
+    s+=P("M 72 51 C 78 47 88 47 98 52 L 98 76 C 91 82 80 82 72 77 C 68 70 68 59 72 51 Z",["Chest"]);
+    s+=P("M 128 51 C 122 47 112 47 102 52 L 102 76 C 109 82 120 82 128 77 C 132 70 132 59 128 51 Z",["Chest"]);
+    s+=P("M 55 70 C 51 77 51 89 53 99 C 56 104 61 104 64 99 L 66 83 L 62 71 Z",["Biceps"]);
+    s+=P("M 145 70 C 149 77 149 89 147 99 C 144 104 139 104 136 99 L 134 83 L 138 71 Z",["Biceps"]);
+    s+=P("M 72 80 C 70 92 70 108 74 123 L 80 132 L 83 119 L 81 87 Z",["Core"],true);
+    s+=P("M 128 80 C 130 92 130 108 126 123 L 120 132 L 117 119 L 119 87 Z",["Core"],true);
+    s+=P("M 83 81 L 117 81 L 120 111 L 116 139 L 100 151 L 84 139 L 80 111 Z",["Core"]);
+    s+=detailLines(["M 100 83 L 100 148","M 82 96 Q 100 98 118 96","M 81 109 Q 100 111 119 109","M 82 122 Q 100 124 118 122","M 85 135 Q 100 137 115 135"], inten(["Core"])>0, "0.6");
+    s+=P("M 86 149 L 98 158 L 91 185 L 84 198 L 80 174 Z",["Legs"],true);
+    s+=P("M 114 149 L 102 158 L 109 185 L 116 198 L 120 174 Z",["Legs"],true);
+    s+=P("M 74 151 C 70 165 69 186 74 202 C 78 207 85 206 89 199 L 92 160 L 84 151 Z",["Legs"]);
+    s+=P("M 126 151 C 130 165 131 186 126 202 C 122 207 115 206 111 199 L 108 160 L 116 151 Z",["Legs"]);
+    s+=P("M 73 211 C 69 224 70 244 73 256 L 80 256 L 84 236 L 82 212 Z",["Legs"]);
+    s+=P("M 127 211 C 131 224 130 244 127 256 L 120 256 L 116 236 L 118 212 Z",["Legs"]);
+    s+=P("M 82 212 L 87 220 L 84 247 L 80 256 L 79 232 Z",["Legs"],true);
+    s+=P("M 118 212 L 113 220 L 116 247 L 120 256 L 121 232 Z",["Legs"],true);
   }else{
-    s+=m("delts",38,44,11,8)+m("delts",92,44,11,8);
-    s+=m("traps",65,46,16,10);
-    s+=m("lats",65,72,18,16);
-    s+=m("triceps",30,72,7,14)+m("triceps",100,72,7,14);
-    s+=m("glutes",65,112,20,11);
-    s+=m("quads",52,140,11,22)+m("quads",78,140,11,22);
-    s+=m("calves",52,186,8,18)+m("calves",78,186,8,18);
+    s+=P("M 93 38 L 82 49 L 85 66 L 100 88 L 115 66 L 118 49 L 107 38 Z",["Shoulders","Back"]);
+    s+=P("M 82 53 C 74 54 69 60 72 68 C 77 72 84 71 90 66 L 90 57 Z",["Shoulders","Back"],true);
+    s+=P("M 118 53 C 126 54 131 60 128 68 C 123 72 116 71 110 66 L 110 57 Z",["Shoulders","Back"],true);
+    s+=P("M 68 46 C 59 46 53 50 52 57 C 52 63 56 68 63 70 L 70 64 L 72 52 Z",["Shoulders"],true);
+    s+=P("M 132 46 C 141 46 147 50 148 57 C 148 63 144 68 137 70 L 130 64 L 128 52 Z",["Shoulders"],true);
+    s+=P("M 55 70 C 51 78 51 91 53 101 C 56 106 61 105 64 100 L 66 82 L 62 71 Z",["Triceps"]);
+    s+=P("M 145 70 C 149 78 149 91 147 101 C 144 106 139 105 136 100 L 134 82 L 138 71 Z",["Triceps"]);
+    s+=P("M 84 70 C 76 80 73 96 74 113 C 76 123 83 130 94 135 L 98 113 L 97 84 L 91 73 Z",["Back"]);
+    s+=P("M 116 70 C 124 80 127 96 126 113 C 124 123 117 130 106 135 L 102 113 L 103 84 L 109 73 Z",["Back"]);
+    s+=detailLines(["M 79 89 Q 88 92 96 96","M 121 89 Q 112 92 104 96","M 76 108 Q 87 111 96 116","M 124 108 Q 113 111 104 116"], inten(["Back"])>0, "0.5");
+    s+=P("M 76 136 C 72 142 72 154 77 161 C 83 166 93 164 99 157 L 98 139 L 88 134 Z",["Glutes"]);
+    s+=P("M 124 136 C 128 142 128 154 123 161 C 117 166 107 164 101 157 L 102 139 L 112 134 Z",["Glutes"]);
+    s+=P("M 74 160 C 70 173 69 190 74 203 C 79 208 86 206 90 198 L 93 162 L 84 157 Z",["Legs"]);
+    s+=P("M 126 160 C 130 173 131 190 126 203 C 121 208 114 206 110 198 L 107 162 L 116 157 Z",["Legs"]);
+    s+=P("M 71 211 C 68 224 69 243 73 252 C 77 255 83 252 86 245 L 85 219 L 81 211 Z",["Legs"]);
+    s+=P("M 129 211 C 132 224 131 243 127 252 C 123 255 117 252 114 245 L 115 219 L 119 211 Z",["Legs"]);
+    s+=P("M 81 211 C 86 216 89 225 86 236 L 82 248 L 79 232 Z",["Legs"],true);
+    s+=P("M 119 211 C 114 216 111 225 114 236 L 118 248 L 121 232 Z",["Legs"],true);
   }
   return s+"</svg>";
 }
@@ -1104,8 +1148,8 @@ function renderReport(){
   var d=reportData(key);
   var box=$("reportBody");
   if(!d.sets.length && !d.cardio.length){ box.innerHTML='<p class="empty">No workout logged on '+fmtDay(key)+'.</p>'; return; }
-  var intensity={};
-  Object.keys(d.groups).forEach(function(g){ (MUSCLE_MAP[g]||[]).forEach(function(m){ intensity[m]=d.groups[g]/d.maxG; }); });
+  var byGroup={};
+  Object.keys(d.groups).forEach(function(g){ byGroup[g]=d.maxG?d.groups[g]/d.maxG:0; });
   var html='<div class="stat-row">'+
     '<div class="stat"><b>'+d.sets.length+'</b><span>Sets</span></div>'+
     '<div class="stat"><b>'+fmtNum(d.vol)+'</b><span>Volume (kg)</span></div>'+
@@ -1129,7 +1173,7 @@ function renderReport(){
       oneRMrows.map(function(r){ return '<tr><td><b>'+esc(r.name)+'</b></td><td>'+fmtNum(r.w)+' '+r.u+' × '+r.r+'</td><td class="r">'+fmtNum(r.rm)+' '+r.u+'</td><td class="r">'+fmtNum(r.rm*0.85)+' '+r.u+'</td></tr>'; }).join("")+
       "</tbody></table>";
   }
-  html+='<h3>Muscles worked</h3><div class="bodymap"><figure>'+bodySVG(true,intensity)+'<figcaption>Front</figcaption></figure><figure>'+bodySVG(false,intensity)+'<figcaption>Back</figcaption></figure></div>'+
+  html+='<h3>Muscles worked</h3><div class="bodymap"><figure>'+bodySVG(true,byGroup,BODY_PAGE_PAL)+'<figcaption>Front</figcaption></figure><figure>'+bodySVG(false,byGroup,BODY_PAGE_PAL)+'<figcaption>Back</figcaption></figure></div>'+
     '<div class="legend">'+Object.keys(d.groups).map(function(g){return "<span>"+esc(g)+" · "+d.groups[g]+" sets</span>";}).join("")+"</div>";
   box.innerHTML=html;
 }
@@ -1150,8 +1194,171 @@ function download(name, text, type){
   a.href=URL.createObjectURL(new Blob([text],{type:type||"text/plain"})); a.download=name;
   document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},400);
 }
+/* ================= Report as JPG =================
+   Renders the same daily report (date, totals, sets, 1RM info, body map)
+   onto a 1080px-wide canvas in the tracker's blue/clay palette and
+   downloads it as workout-report-YYYY-MM-DD.jpg. */
+function downloadBlob(name, blob){
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},400);
+}
+function svgToImage(svgStr){
+  return new Promise(function(resolve,reject){
+    var img=new Image();
+    var url=URL.createObjectURL(new Blob([svgStr],{type:"image/svg+xml;charset=utf-8"}));
+    img.onload=function(){ setTimeout(function(){URL.revokeObjectURL(url);},0); resolve(img); };
+    img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error("body map image failed")); };
+    img.src=url;
+  });
+}
+function rrPath(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+function fitText(ctx,text,maxW){
+  if(ctx.measureText(text).width<=maxW) return text;
+  var t=text;
+  while(t.length>1 && ctx.measureText(t+"…").width>maxW) t=t.slice(0,-1);
+  return t+"…";
+}
+function downloadReportJpg(key){
+  var d=reportData(key);
+  if(!d.sets.length && !d.cardio.length){ toast("No workout logged on "+fmtDay(key)+" — nothing to export."); return; }
+  var byGroup={};
+  Object.keys(d.groups).forEach(function(g){ byGroup[g]=d.maxG?d.groups[g]/d.maxG:0; });
+  var exRows=d.order.map(function(exId){
+    var ex=exById(exId), sets=d.byEx[exId], best=null;
+    sets.forEach(function(s){ var rm=oneRM(s.w,s.r); if(rm!==null && (!best || toKg(rm,s.u)>toKg(best.rm,best.u))) best={rm:rm,u:s.u}; });
+    return { name:ex.name, group:ex.group,
+      detail:sets.map(function(s){return fmtNum(s.w)+" "+s.u+" × "+s.r;}).join("   ·   "),
+      rmLine: best ? "Est 1RM "+fmtNum(best.rm)+" "+best.u+"   ·   6RM target "+fmtNum(best.rm*0.85)+" "+best.u : "" };
+  });
+  var cardioRows=d.cardio.map(function(c){
+    var bits=[fmtNum(c.dur)+" min",(c.cal||0)+" kcal"];
+    if(c.dist) bits.push(fmtNum(c.dist)+" "+c.du);
+    if(c.floors) bits.push(c.floors+" floors");
+    if(c.incline) bits.push(c.incline+"% incline");
+    return { name:cardioById(c.ex).name, detail:bits.join("   ·   ") };
+  });
+  var cardioMin=d.cardio.reduce(function(t,c){return t+c.dur;},0);
+  Promise.all([svgToImage(bodySVG(true,byGroup,BODY_EXPORT_PAL,true)), svgToImage(bodySVG(false,byGroup,BODY_EXPORT_PAL,true))])
+  .then(function(imgs){
+    var PAL={bg:"#F8ECE8",surface:"#FFF8F6",surface2:"#F0DDD8",ink:"#433235",dim:"#806D70",line:"#E4C8C2",clay:"#BD7B75",clayDeep:"#7A4A48",blue:"#2F6F8E"};
+    var W=1080, LX=86, RX=994, CW=908;
+    var canvas=document.createElement("canvas");
+    canvas.width=W; canvas.height=120;
+    var ctx=canvas.getContext("2d");
+    if(!ctx) throw new Error("canvas unavailable");
+    var SANS='"Barlow",system-ui,sans-serif', COND='"Barlow Condensed","Barlow",sans-serif', SEMI='"Barlow Semi Condensed","Barlow",sans-serif';
+    /* --- measure the muscle-group chips to size the canvas --- */
+    ctx.font='700 20px '+SEMI;
+    var chips=Object.keys(d.groups).map(function(g){
+      var label=(g+" · "+d.groups[g]+" sets").toUpperCase();
+      return {label:label, w:Math.min(CW, ctx.measureText(label).width+42)};
+    });
+    var chipRows=0;
+    if(d.sets.length && chips.length){
+      chipRows=1; var cx=LX;
+      chips.forEach(function(ch){ if(cx+ch.w>RX){ chipRows++; cx=LX; } cx+=ch.w+14; });
+    }
+    /* --- lay out sections top to bottom --- */
+    var cursor=378; /* header + metric chips end here */
+    var mHeadY=0, svgY=0, legendY=0;
+    if(d.sets.length){
+      mHeadY=cursor+57; svgY=mHeadY+25;
+      legendY=svgY+515+25;
+      cursor=legendY+(chipRows?chipRows*52-13:0);
+    }
+    var exHeadY=0, exTop=0;
+    if(exRows.length){ exHeadY=cursor+72; exTop=exHeadY+28; cursor=exTop+exRows.length*126-14; }
+    var cHeadY=0, cTop=0;
+    if(cardioRows.length){ cHeadY=cursor+72; cTop=cHeadY+28; cursor=cTop+cardioRows.length*96-14; }
+    var footLineY=cursor+58, H=footLineY+86;
+    canvas.height=H; /* resets the context — all state is set below */
+    /* --- draw --- */
+    ctx.fillStyle=PAL.bg; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=PAL.clay; ctx.fillRect(0,0,360,18);
+    ctx.fillStyle=PAL.blue; ctx.fillRect(360,0,360,18);
+    ctx.fillStyle=PAL.clayDeep; ctx.fillRect(720,0,360,18);
+    rrPath(ctx,48,52,984,H-92,42); ctx.fillStyle=PAL.surface; ctx.fill(); ctx.strokeStyle=PAL.line; ctx.lineWidth=3; ctx.stroke();
+    ctx.textBaseline="alphabetic";
+    ctx.fillStyle=PAL.blue; ctx.font='700 28px '+SEMI;
+    ctx.fillText("W O R K O U T   R E P O R T",LX,116);
+    ctx.fillStyle=PAL.ink; ctx.font='700 54px '+COND;
+    ctx.fillText(fitText(ctx,fmtDay(key),CW),LX,180);
+    ctx.fillStyle=PAL.dim; ctx.font='400 25px '+SANS;
+    ctx.fillText(d.sets.length+" strength sets · "+d.cardio.length+" cardio sessions",LX,225);
+    var metrics=[
+      {label:"SETS", value:String(d.sets.length), color:PAL.blue},
+      {label:"VOLUME", value:fmtNum(d.vol)+" kg", color:PAL.clayDeep},
+      {label:"EST. CALORIES", value:String(d.cal), color:PAL.clay},
+      {label:"CARDIO", value:fmtNum(cardioMin)+" min", color:PAL.blue}
+    ];
+    metrics.forEach(function(mt,i){
+      var x=LX+i*230;
+      rrPath(ctx,x,262,218,116,24); ctx.fillStyle=PAL.surface2; ctx.fill();
+      ctx.fillStyle=PAL.dim; ctx.font='700 19px '+SEMI; ctx.fillText(mt.label,x+20,302);
+      ctx.fillStyle=mt.color; ctx.font='700 36px '+COND; ctx.fillText(fitText(ctx,mt.value,178),x+20,350);
+    });
+    if(d.sets.length){
+      ctx.fillStyle=PAL.ink; ctx.font='700 26px '+SEMI; ctx.fillText("MUSCLES WORKED",LX,mHeadY);
+      ctx.fillStyle=PAL.dim; ctx.font='400 20px '+SANS;
+      var note="clay = worked"; ctx.fillText(note,RX-ctx.measureText(note).width,mHeadY);
+      ctx.drawImage(imgs[0],110,svgY,370,515);
+      ctx.drawImage(imgs[1],600,svgY,370,515);
+      ctx.font='700 20px '+SEMI;
+      var chx=LX, chy=legendY;
+      chips.forEach(function(ch){
+        if(chx+ch.w>RX){ chx=LX; chy+=52; }
+        rrPath(ctx,chx,chy,ch.w,39,20); ctx.fillStyle=PAL.clay; ctx.fill();
+        ctx.fillStyle="#FFFFFF"; ctx.fillText(fitText(ctx,ch.label,ch.w-30),chx+21,chy+27);
+        chx+=ch.w+14;
+      });
+    }
+    if(exRows.length){
+      ctx.fillStyle=PAL.ink; ctx.font='700 26px '+SEMI; ctx.fillText("EXERCISES",LX,exHeadY);
+      exRows.forEach(function(r,i){
+        var ry=exTop+i*126;
+        rrPath(ctx,LX,ry,CW,112,18); ctx.fillStyle=PAL.surface2; ctx.fill();
+        ctx.fillStyle=PAL.ink; ctx.font='700 26px '+SANS;
+        ctx.fillText(fitText(ctx,r.name,CW-40),LX+20,ry+36);
+        ctx.fillStyle=PAL.dim; ctx.font='400 21px '+SANS;
+        ctx.fillText(fitText(ctx,r.group+" — "+r.detail,CW-40),LX+20,ry+68);
+        if(r.rmLine){ ctx.fillStyle=PAL.clayDeep; ctx.font='600 20px '+SANS; ctx.fillText(fitText(ctx,r.rmLine,CW-40),LX+20,ry+97); }
+      });
+    }
+    if(cardioRows.length){
+      ctx.fillStyle=PAL.ink; ctx.font='700 26px '+SEMI; ctx.fillText("CARDIO",LX,cHeadY);
+      cardioRows.forEach(function(r,i){
+        var ry=cTop+i*96;
+        rrPath(ctx,LX,ry,CW,82,18); ctx.fillStyle=PAL.surface2; ctx.fill();
+        ctx.fillStyle=PAL.ink; ctx.font='700 25px '+SANS;
+        ctx.fillText(fitText(ctx,r.name,CW-40),LX+20,ry+33);
+        ctx.fillStyle=PAL.dim; ctx.font='400 20px '+SANS;
+        ctx.fillText(fitText(ctx,r.detail,CW-40),LX+20,ry+63);
+      });
+    }
+    ctx.strokeStyle=PAL.line; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(LX,footLineY); ctx.lineTo(RX,footLineY); ctx.stroke();
+    ctx.fillStyle=PAL.dim; ctx.font='400 20px '+SANS;
+    ctx.fillText(d.cardio.length?"Calories: strength estimate + logged cardio":"Strength calories are estimated",LX,footLineY+40);
+    ctx.textAlign="right"; ctx.fillText(key,RX,footLineY+40); ctx.textAlign="left";
+    canvas.toBlob(function(blob){
+      if(!blob){ toast("Couldn't create the report image — try again."); return; }
+      downloadBlob("workout-report-"+key+".jpg", blob);
+      toast("Report image saved as JPG.");
+    },"image/jpeg",0.92);
+  }).catch(function(err){
+    console.warn("Report JPG failed", err);
+    toast("Couldn't create the report image — try again.");
+  });
+}
 $("reportDate").addEventListener("change",renderReport);
-$("dlReportBtn").addEventListener("click",function(){ var k=$("reportDate").value||todayKey(); download("workout-report-"+k+".txt", reportText(k)); });
+$("dlReportBtn").addEventListener("click",function(){ var k=$("reportDate").value||todayKey(); downloadReportJpg(k); });
 $("copyReportBtn").addEventListener("click",function(){
   var k=$("reportDate").value||todayKey();
   if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(reportText(k)).then(function(){toast("Report copied.");},function(){toast("Copy blocked — use Download instead.");}); }
