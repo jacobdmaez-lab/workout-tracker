@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>Workout Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f4f2ec; --panel:#fffdf8; --panel2:#eceade; --ink:#17181c; --ink2:#55534b;
+    --line:#d9d5c7; --accent:#e8490f; --accent-ink:#fff; --good:#1e7d46;
+    --chip:#eceade; --danger:#b3261e; --shadow:0 1px 2px rgba(20,18,10,.08),0 4px 14px rgba(20,18,10,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#121316; --panel:#1b1d21; --panel2:#23262c; --ink:#f2efe7; --ink2:#a9a79e;
+      --line:#33363d; --accent:#ff5c1f; --chip:#26292f; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Barlow",system-ui,sans-serif;font-size:16px;line-height:1.45}
+  .wrap{max-width:880px;margin:0 auto;padding:0 14px 90px}
+  h1,h2,h3{font-family:"Barlow Condensed","Barlow",sans-serif;text-transform:uppercase;letter-spacing:.02em;margin:0}
+  /* header stats */
+  .topbar{padding:20px 2px 6px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between}
+  .today-line{font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;color:var(--ink2);font-size:15px}
+  .stat-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;box-shadow:var(--shadow)}
+  .stat b{font-family:"Barlow Condensed",sans-serif;font-size:24px;display:block;line-height:1}
+  .stat span{font-size:12px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+  /* tabs */
+  .tabs{position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 0 8px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:1 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:999px;
+       padding:9px 16px;font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:600;letter-spacing:.05em;cursor:pointer;text-transform:uppercase}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  @media (max-width:560px){
+    .tabs{flex-wrap:wrap;overflow-x:visible}
+    .tab{flex:1 1 30%;padding:8px 4px;font-size:16px}
+  }
+  .tab:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  section.view{display:none}
+  section.view.active{display:block}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-top:12px}
+  .card h2{font-size:24px;margin-bottom:4px}
+  .card h3{font-size:19px;margin:14px 0 6px}
+  .sub{color:var(--ink2);font-size:14px}
+  label.fl{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);margin:12px 0 5px}
+  input,select,textarea{width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;
+    padding:11px 12px;font:inherit;font-size:16px}
+  input[type="number"]{font-variant-numeric:tabular-nums}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  @media (max-width:520px){.grid3{grid-template-columns:1fr 1fr}}
+  .btn{border:0;border-radius:12px;padding:14px 18px;font-family:"Barlow Condensed",sans-serif;font-size:21px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:var(--accent);color:var(--accent-ink);width:100%}
+  .btn:active{transform:translateY(1px)}
+  .btn.secondary{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-size:17px;padding:11px 14px}
+  .btn.small{width:auto;font-size:16px;padding:8px 14px}
+  .btn.ghost{background:transparent;color:var(--ink2);border:1px solid var(--line);font-size:16px;padding:9px 14px}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btnrow .btn{width:auto;flex:1 1 auto}
+  /* hint chips */
+  .hints{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .hint{background:var(--chip);border-radius:10px;padding:8px 12px;font-size:14px}
+  .hint b{font-family:"Barlow Semi Condensed",sans-serif;font-size:16px}
+  .hint span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2)}
+  .hint.hot{background:var(--accent);color:var(--accent-ink)}
+  .hint.hot span{color:var(--accent-ink);opacity:.85}
+  /* set lists */
+  .setlist{list-style:none;margin:8px 0 0;padding:0}
+  .setlist li{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .setlist li:last-child{border-bottom:0}
+  .setnum{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:18px;color:var(--ink2);width:26px;flex:none}
+  .setmain{flex:1;min-width:0}
+  .setmain b{font-variant-numeric:tabular-nums}
+  .setmeta{color:var(--ink2);font-size:13px}
+  .del{flex:none;background:none;border:1px solid var(--line);color:var(--ink2);border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer;line-height:1}
+  .del:hover{color:var(--danger);border-color:var(--danger)}
+  .exhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:16px}
+  .exhead h3{margin:0}
+  .exhead .vol{color:var(--ink2);font-size:13px;white-space:nowrap}
+  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:22px;background:var(--ink);color:var(--bg);
+    padding:11px 18px;border-radius:999px;font-weight:600;font-size:15px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:92vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .queuebar{height:10px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-top:8px}
+  .queuebar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+  .queuechips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .qchip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600;background:var(--panel)}
+  .qchip.done{background:var(--good);border-color:var(--good);color:#fff}
+  .qchip.now{border-color:var(--accent);color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);text-align:left;padding:8px 6px;border-bottom:2px solid var(--line)}
+  td{padding:8px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:top}
+  td.r,th.r{text-align:right}
+  .dayblock{margin-top:18px}
+  .dayblock>h3{font-size:20px;border-bottom:2px solid var(--ink);padding-bottom:4px;display:flex;justify-content:space-between;align-items:baseline}
+  .dayblock>h3 span{font-family:"Barlow",sans-serif;font-size:13px;color:var(--ink2);text-transform:none;letter-spacing:0}
+  .bodymap{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  .bodymap figure{margin:0;text-align:center}
+  .bodymap figcaption{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);margin-top:2px}
+  .muscle{fill:var(--panel2);stroke:var(--line);stroke-width:1}
+  .legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .legend span{background:var(--chip);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
+  .empty{color:var(--ink2);padding:14px 2px;font-size:15px}
+  .note{font-size:13px;color:var(--ink2);margin-top:10px}
+  .planitem{display:flex;gap:8px;align-items:end;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
+  .planitem .grow{flex:2 1 160px}.planitem .sm{flex:1 1 70px}
+  .planitem label.fl{margin-top:0}
+  footer{margin-top:26px;color:var(--ink2);font-size:13px;text-align:center}
+  .search{margin-top:10px}
+  details{margin-top:10px}
+  summary{cursor:pointer;font-weight:600;font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <h1 style="font-size:34px">Workout Tracker</h1>
+      <div class="today-line" id="todayLine"></div>
+    </div>
+  </div>
+  <div class="stat-row" id="statRow"></div>
+
+  <nav class="tabs" role="tablist" aria-label="Tracker sections">
+    <button class="tab" role="tab" data-view="lift" aria-selected="true">Lift</button>
+    <button class="tab" role="tab" data-view="plan" aria-selected="false">Plan</button>
+    <button class="tab" role="tab" data-view="cardio" aria-selected="false">Cardio</button>
+    <button class="tab" role="tab" data-view="report" aria-selected="false">Report</button>
+    <button class="tab" role="tab" data-view="history" aria-selected="false">History</button>
+  </nav>
+
+  <!-- LIFT -->
+  <section class="view active" id="view-lift">
+    <div class="card">
+      <h2>Log a set</h2>
+      <div id="queueBox"></div>
+      <label class="fl" for="exSearch">Find exercise</label>
+      <input class="search" id="exSearch" type="search" placeholder="Search 67 exercises…" autocomplete="off" style="margin-top:0" />
+      <label class="fl" for="exSelect">Exercise</label>
+      <select id="exSelect"></select>
+      <div class="hints" id="exHints"></div>
+      <div class="grid3">
+        <div><label class="fl" for="inWeight">Weight</label><input id="inWeight" type="number" inputmode="decimal" step="0.5" min="0" /></div>
+        <div><label class="fl" for="inReps">Reps</label><input id="inReps" type="number" inputmode="numeric" step="1" min="1" /></div>
+        <div><label class="fl" for="inUnit">Unit</label>
+          <select id="inUnit"><option value="lb">lb</option><option value="kg">kg</option></select></div>
+      </div>
+      <div class="btnrow"><button class="btn" id="logSetBtn" type="button">Log set</button></div>
+      <p class="note" id="lastSessionLine"></p>
+    </div>
+    <div class="card">
+      <h2>Today&rsquo;s lifting</h2>
+      <div id="todaySets"></div>
+    </div>
+  </section>
+
+  <!-- PLAN -->
+  <section class="view" id="view-plan">
+    <div class="card">
+      <h2>Plan a workout day</h2>
+      <p class="sub">Pick a date, add exercises in order, set target weight &amp; reps, then start the workout from the plan.</p>
+      <label class="fl" for="planDate">Date</label>
+      <input id="planDate" type="date" />
+      <div id="planItems"></div>
+      <div class="btnrow">
+        <button class="btn secondary" id="addPlanItemBtn" type="button">+ Add exercise</button>
+        <button class="btn" id="savePlanBtn" type="button">Save plan</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Saved plans</h2>
+      <div id="planList"></div>
+    </div>
+  </section>
+
+  <!-- CARDIO -->
+  <section class="view" id="view-cardio">
+    <div class="card">
+      <h2>Log cardio</h2>
+      <label class="fl" for="cardioSelect">Machine</label>
+      <select id="cardioSelect"></select>
+      <div class="grid2">
+        <div><label class="fl" for="inDur">Minutes</label><input id="inDur" type="number" inputmode="decimal" step="0.5" min="0" /></div>
+        <div><label class="fl" for="inCal">Calories (optional)</label><input id="inCal" type="number" inputmode="numeric" step="1" min="0" placeholder="Estimated if blank" /></div>
+      </div>
+      <div class="grid2" id="distRow">
+        <div><label class="fl" for="inDist">Distance</label><input id="inDist" type="number" inputmode="decimal" step="0.01" min="0" /></div>
+        <div><label class="fl" for="inDistUnit">Distance unit</label>
+          <select id="inDistUnit"><option value="mi">miles</option><option value="km">km</option></select></div>
+      </div>
+      <div id="inclineRow" style="display:none">
+        <label class="fl" for="inIncline">Incline % (treadmill)</label>
+        <input id="inIncline" type="number" inputmode="decimal" step="0.5" min="0" max="40" />
+      </div>
+      <div id="floorsRow" style="display:none">
+        <label class="fl" for="inFloors">Floors climbed (StairMaster)</label>
+        <input id="inFloors" type="number" inputmode="numeric" step="1" min="0" />
+      </div>
+      <div class="btnrow"><button class="btn" id="logCardioBtn" type="button">Log cardio</button></div>
+    </div>
+    <div class="card">
+      <h2>Today&rsquo;s cardio</h2>
+      <div id="todayCardio"></div>
+    </div>
+  </section>
+
+  <!-- REPORT -->
+  <section class="view" id="view-report">
+    <div class="card">
+      <h2>Daily report</h2>
+      <label class="fl" for="reportDate">Date</label>
+      <input id="reportDate" type="date" />
+      <div id="reportBody"></div>
+      <div class="btnrow">
+        <button class="btn secondary" id="dlReportBtn" type="button">Download report (.txt)</button>
+        <button class="btn ghost" id="copyReportBtn" type="button">Copy summary</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Your data</h2>
+      <p class="sub">Everything is stored in this browser on this device — logging is instant and works offline. Export regularly to keep a backup you can move to another browser or device.</p>
+      <div class="btnrow">
+        <button class="btn secondary" id="expJsonBtn" type="button">Export history (JSON)</button>
+        <button class="btn secondary" id="expCsvBtn" type="button">Export history (CSV)</button>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="importBtn" type="button">Import JSON…</button>
+        <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
+        <button class="btn ghost" id="resetBtn" type="button">Reset to imported history</button>
+      </div>
+      <p class="note" id="dataNote"></p>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="view" id="view-history">
+    <div class="card">
+      <h2>History</h2>
+      <label class="fl" for="histFilter">Filter by exercise</label>
+      <select id="histFilter"><option value="">All exercises</option></select>
+      <div id="historyBody"></div>
+    </div>
+  </section>
+
+  <footer>Local-first: sets save on this device the moment you tap Log — no server round-trip, no stuck button.</footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ===== Seed: Jacob's deduped export (370 sets, snapshot Nov 8, 2026 2:23pm) ===== */
+var SEED = {"exercises":[[1,"Bench Press","Chest"],[2,"Incline DB Press","Chest"],[3,"Push-ups","Chest"],[4,"Chest Fly","Chest"],[5,"Dips","Chest"],[6,"Pull-ups","Back"],[7,"Bent Over Row","Back"],[8,"Lat Pulldown","Back"],[9,"Deadlift","Back"],[10,"Seated Cable Row","Back"],[11,"Squat","Legs"],[12,"Leg Press","Legs"],[13,"Lunges","Legs"],[14,"Leg Extension","Legs"],[15,"Romanian Deadlift","Legs"],[16,"Overhead Press","Shoulders"],[17,"Lateral Raise","Shoulders"],[18,"Front Raise","Shoulders"],[19,"Face Pull","Shoulders"],[20,"Arnold Press","Shoulders"],[21,"Barbell Curl","Biceps"],[22,"Hammer Curl","Biceps"],[23,"Preacher Curl","Biceps"],[24,"Concentration Curl","Biceps"],[25,"Cable Curl","Biceps"],[26,"Tricep Pushdown","Triceps"],[27,"Skull Crusher","Triceps"],[28,"Overhead Tricep Ext","Triceps"],[29,"Close-Grip Bench","Triceps"],[30,"Tricep Dips","Triceps"],[31,"Hip Thrust","Glutes"],[32,"Glute Bridge","Glutes"],[33,"Bulgarian Split Squat","Glutes"],[34,"Cable Kickback","Glutes"],[35,"Sumo Deadlift","Glutes"],[36,"Plank","Core"],[37,"Russian Twist","Core"],[38,"Hanging Leg Raise","Core"],[39,"Ab Wheel","Core"],[40,"Cable Woodchop","Core"],[41,"Hip Abductor","Glutes"],[42,"Hip Adductor","Glutes"],[43,"Bird Dog","Core"],[44,"Vertical Traction","Back"],[45,"Dead Bug","Core"],[46,"Chest Press Machine","Chest"],[47,"Reverse Fly","Shoulders"],[48,"Wrist Curl","Biceps"],[49,"Upper Back Machine","Back"],[50,"Pec Machine","Chest"],[51,"Reverse Wrist Curl","Biceps"],[52,"Cat-Cow","Core"],[53,"Farmer's Walk","Biceps"],[54,"Hammer Hold","Biceps"],[55,"Arm Extension","Triceps"],[56,"Low Row Machine","Back"],[57,"Pec Fly","Chest"],[58,"Seated Row","Back"],[59,"Calf Raise","Legs"],[60,"Single Seated Row","Back"],[61,"Plate Loaded Shoulder Press","Shoulders"],[62,"Seated Cable Row with Foot Plates","Back"],[63,"Overhead Extension Plate Loaded","Triceps"],[64,"Seated Dip","Triceps"],[65,"Bicep Curl Plate Loaded","Biceps"],[66,"Seated Dip Plate Loaded","Chest"],[67,"Torque Shoulder Press","Shoulders"]],"sets":[[218,47,40.0,8,"lb",1767225600000],[219,47,40.0,8,"lb",1767225600000],[220,47,30.0,8,"lb",1767225600000],[221,31,70.0,10,"lb",1767225600000],[222,31,80.0,10,"lb",1767225600000],[223,31,90.0,10,"lb",1767225600000],[224,50,70.0,8,"lb",1767225600000],[225,50,60.0,10,"lb",1767225600000],[226,50,60.0,8,"lb",1767225600000],[227,8,80.0,10,"lb",1767225600000],[228,8,80.0,10,"lb",1767225600000],[229,8,90.0,8,"lb",1767225600000],[230,2,25.0,10,"lb",1767225600000],[231,2,25.0,10,"lb",1767225600000],[232,2,25.0,8,"lb",1767225600000],[233,22,25.0,8,"lb",1767225600000],[234,22,25.0,7,"lb",1767225600000],[1,42,100.0,10,"lb",1779494400000],[2,42,110.0,10,"lb",1779494400000],[3,42,120.0,6,"lb",1779494400000],[4,41,110.0,10,"lb",1779494400000],[5,41,120.0,10,"lb",1779494400000],[6,41,130.0,8,"lb",1779494400000],[7,12,220.0,10,"lb",1779494400000],[8,12,240.0,10,"lb",1779494400000],[9,12,260.0,8,"lb",1779494400000],[10,1,45.0,10,"lb",1779667200000],[11,1,65.0,8,"lb",1779667200000],[12,1,75.0,6,"lb",1779667200000],[13,1,75.0,6,"lb",1779667200000],[14,11,45.0,10,"lb",1779667200000],[15,11,65.0,10,"lb",1779667200000],[16,41,120.0,10,"lb",1780185600000],[17,41,130.0,10,"lb",1780185600000],[18,41,130.0,8,"lb",1780185600000],[19,42,120.0,10,"lb",1780185600000],[20,42,130.0,8,"lb",1780185600000],[21,42,130.0,6,"lb",1780185600000],[22,12,240.0,8,"lb",1780185600000],[23,12,240.0,8,"lb",1780185600000],[24,12,240.0,6,"lb",1780185600000],[25,31,110.0,6,"lb",1780185600000],[26,31,110.0,6,"lb",1780185600000],[27,31,110.0,6,"lb",1780185600000],[28,12,240.0,10,"lb",1781395200000],[29,12,260.0,8,"lb",1781395200000],[30,12,280.0,6,"lb",1781395200000],[31,44,80.0,10,"lb",1781395200000],[32,44,90.0,8,"lb",1781395200000],[33,44,100.0,6,"lb",1781395200000],[34,31,110.0,10,"lb",1781395200000],[35,31,110.0,8,"lb",1781395200000],[36,46,50.0,10,"lb",1781913600000],[37,46,70.0,10,"lb",1781913600000],[38,46,80.0,8,"lb",1781913600000],[39,8,70.0,10,"lb",1781913600000],[40,8,90.0,10,"lb",1781913600000],[41,8,120.0,6,"lb",1781913600000],[42,15,2.0,20,"lb",1781913600000],[43,15,2.0,30,"lb",1781913600000],[44,15,2.0,30,"lb",1781913600000],[45,4,30.0,6,"lb",1781913600000],[46,4,25.0,8,"lb",1781913600000],[47,45,0.0,20,"lb",1781913600000],[48,36,0.0,90,"lb",1781913600000],[49,45,2.0,10,"lb",1782259200000],[50,36,2.0,30,"lb",1782259200000],[51,32,2.0,12,"lb",1782259200000],[52,43,2.0,8,"lb",1782259200000],[53,52,0.0,8,"lb",1782259200000],[54,41,140.0,8,"lb",1782259200000],[55,41,130.0,8,"lb",1782259200000],[56,41,130.0,10,"lb",1782259200000],[57,42,120.0,8,"lb",1782259200000],[58,8,90.0,6,"lb",1782259200000],[59,10,90.0,8,"lb",1782259200000],[60,47,40.0,7,"lb",1782259200000],[61,16,40.0,7,"lb",1782259200000],[62,16,50.0,6,"lb",1782259200000],[63,26,70.0,8,"lb",1782259200000],[64,53,30.864679999999996,1,"lb",1782259200000],[65,1,60.0,8,"lb",1782259200000],[66,46,70.0,8,"lb",1782950400000],[67,48,5.0,15,"lb",1782950400000],[68,51,5.0,15,"lb",1782950400000],[69,54,5.0,45,"lb",1782950400000],[70,54,5.0,45,"lb",1782950400000],[71,54,5.0,45,"lb",1782950400000],[72,26,70.0,7,"lb",1783814400000],[73,26,70.0,7,"lb",1783814400000],[74,26,70.0,7,"lb",1783814400000],[75,2,25.0,10,"lb",1783814400000],[76,2,25.0,10,"lb",1783814400000],[77,2,25.0,10,"lb",1783814400000],[78,7,25.0,10,"lb",1783814400000],[79,7,30.0,10,"lb",1783814400000],[80,7,30.0,10,"lb",1783814400000],[81,23,30.0,10,"lb",1783814400000],[82,23,35.0,6,"lb",1783814400000],[83,23,35.0,6,"lb",1783814400000],[84,44,70.0,10,"lb",1783814400000],[85,44,80.0,8,"lb",1783814400000],[86,44,80.0,10,"lb",1783814400000],[87,31,90.0,8,"lb",1783814400000],[88,31,90.0,8,"lb",1783814400000],[89,31,90.0,8,"lb",1783814400000],[90,6,90.0,6,"lb",1783814400000],[91,12,140.0,10,"lb",1783814400000],[92,12,180.0,10,"lb",1783814400000],[93,12,180.0,10,"lb",1783814400000],[94,12,200.0,10,"lb",1783814400000],[95,12,220.0,4,"lb",1783814400000],[96,42,130.0,8,"lb",1783814400000],[97,42,130.0,6,"lb",1783814400000],[98,41,130.0,6,"lb",1783814400000],[99,41,130.0,8,"lb",1783814400000],[100,1,35.0,10,"lb",1784073600000],[101,1,55.0,10,"lb",1784073600000],[102,1,65.0,8,"lb",1784073600000],[103,1,75.0,8,"lb",1784073600000],[104,31,20.0,10,"lb",1784073600000],[105,31,35.0,10,"lb",1784073600000],[106,31,45.0,10,"lb",1784073600000],[107,12,180.0,10,"lb",1784073600000],[108,12,200.0,10,"lb",1784073600000],[109,12,220.0,8,"lb",1784073600000],[110,6,90.0,8,"lb",1784073600000],[111,6,60.0,6,"lb",1784073600000],[112,6,60.0,4,"lb",1784073600000],[113,15,45.0,8,"lb",1784332800000],[114,15,65.0,10,"lb",1784332800000],[115,15,85.0,8,"lb",1784332800000],[116,7,45.0,8,"lb",1784332800000],[117,7,65.0,10,"lb",1784332800000],[118,7,85.0,8,"lb",1784332800000],[119,11,45.0,10,"lb",1784332800000],[120,11,65.0,10,"lb",1784332800000],[121,11,95.0,6,"lb",1784332800000],[122,11,95.0,6,"lb",1784332800000],[123,49,80.0,8,"lb",1784332800000],[124,49,80.0,8,"lb",1784332800000],[125,49,80.0,8,"lb",1784332800000],[126,50,70.0,3,"lb",1784332800000],[127,50,50.0,6,"lb",1784332800000],[128,50,40.0,8,"lb",1784332800000],[129,11,45.0,10,"lb",1784332800000],[130,11,65.0,10,"lb",1784332800000],[131,11,95.0,10,"lb",1784332800000],[132,11,115.0,6,"lb",1784332800000],[133,15,45.0,8,"lb",1784332800000],[134,15,65.0,8,"lb",1784332800000],[135,15,85.0,8,"lb",1784332800000],[136,7,45.0,10,"lb",1784332800000],[137,7,65.0,8,"lb",1784332800000],[138,7,85.0,6,"lb",1784332800000],[139,1,45.0,10,"lb",1784332800000],[140,1,65.0,10,"lb",1784332800000],[141,1,75.0,4,"lb",1784332800000],[142,8,10.0,10,"lb",1785283200000],[143,8,70.0,10,"lb",1785283200000],[144,8,90.0,8,"lb",1785283200000],[145,8,100.0,6,"lb",1785283200000],[146,1,50.0,10,"lb",1785283200000],[147,1,70.0,8,"lb",1785283200000],[148,1,80.0,4,"lb",1785283200000],[149,10,50.0,10,"lb",1785283200000],[150,10,70.0,10,"lb",1785283200000],[151,10,90.0,8,"lb",1785283200000],[152,6,75.0,6,"lb",1785283200000],[153,6,75.0,6,"lb",1785283200000],[154,6,75.0,6,"lb",1785283200000],[155,31,90.0,10,"lb",1785283200000],[156,31,90.0,8,"lb",1785283200000],[157,36,0.0,45,"lb",1785283200000],[158,36,0.0,45,"lb",1785283200000],[159,45,2.0,10,"lb",1785283200000],[160,6,105.0,6,"lb",1785456000000],[161,6,60.0,6,"lb",1785456000000],[162,6,60.0,6,"lb",1785456000000],[163,6,60.0,5,"lb",1785456000000],[164,1,50.0,10,"lb",1785456000000],[165,1,70.0,6,"lb",1785456000000],[166,1,70.0,6,"lb",1785456000000],[167,1,70.0,5,"lb",1785456000000],[168,16,30.0,6,"lb",1785456000000],[169,16,50.0,5,"lb",1785456000000],[170,16,50.0,6,"lb",1785456000000],[171,31,90.0,6,"lb",1785456000000],[172,31,90.0,6,"lb",1785456000000],[173,36,0.0,45,"lb",1785456000000],[174,36,0.0,45,"lb",1785456000000],[175,45,2.0,5,"lb",1785456000000],[211,15,65.0,5,"lb",1785542400000],[212,7,85.0,5,"lb",1785542400000],[213,31,95.0,5,"lb",1785542400000],[214,1,75.0,5,"lb",1785542400000],[215,16,30.0,5,"lb",1785542400000],[216,4,13.0,5,"lb",1785542400000],[217,9,85.0,5,"lb",1785542400000],[176,46,50.0,10,"lb",1786665600000],[177,46,70.0,8,"lb",1786665600000],[178,46,80.0,6,"lb",1786665600000],[179,46,80.0,5,"lb",1786665600000],[180,6,75.0,8,"lb",1786665600000],[181,6,60.0,5,"lb",1786665600000],[182,6,60.0,5,"lb",1786665600000],[183,8,70.0,10,"lb",1786665600000],[184,8,90.0,8,"lb",1786665600000],[185,8,100.0,6,"lb",1786665600000],[186,21,30.0,8,"lb",1786665600000],[187,21,30.0,7,"lb",1786665600000],[188,21,30.0,5,"lb",1786665600000],[189,16,20.0,8,"lb",1786665600000],[190,16,20.0,8,"lb",1786665600000],[191,16,20.0,6,"lb",1786665600000],[192,26,27.0,12,"lb",1786665600000],[193,26,23.0,12,"lb",1786665600000],[194,26,20.0,12,"lb",1786665600000],[195,26,17.0,20,"lb",1786665600000],[196,26,13.0,12,"lb",1786665600000],[197,11,0.0,10,"lb",1786665600000],[198,11,45.0,10,"lb",1786665600000],[199,11,90.0,6,"lb",1786665600000],[200,11,90.0,6,"lb",1786665600000],[201,14,30.0,8,"lb",1786665600000],[202,14,40.0,8,"lb",1786665600000],[203,14,40.0,8,"lb",1786665600000],[204,41,80.0,10,"lb",1786665600000],[205,41,110.0,10,"lb",1786665600000],[206,41,120.0,10,"lb",1786665600000],[207,41,130.0,6,"lb",1786665600000],[208,42,110.0,10,"lb",1786665600000],[209,42,120.0,8,"lb",1786665600000],[210,42,120.0,6,"lb",1786665600000],[238,44,70.0,10,"lb",1787435758813],[239,44,80.0,8,"lb",1787435869480],[240,44,90.0,6,"lb",1787436083302],[241,46,70.0,8,"lb",1787436209644],[242,46,80.0,6,"lb",1787436324698],[243,46,80.0,6,"lb",1787436440987],[244,55,40.0,10,"lb",1787436665252],[245,55,50.0,10,"lb",1787436990475],[246,55,60.0,6,"lb",1787437098944],[247,49,80.0,6,"lb",1787437322356],[248,49,80.0,6,"lb",1787437456193],[249,49,80.0,6,"lb",1787437617941],[250,46,80.0,6,"lb",1787713489277],[251,46,80.0,8,"lb",1787713673760],[252,46,80.0,6,"lb",1787713797391],[253,8,70.0,10,"lb",1787713944154],[254,8,85.0,8,"lb",1787714055503],[255,8,85.0,6,"lb",1787714168755],[256,16,20.0,10,"lb",1787886869310],[257,16,30.0,8,"lb",1787887047360],[258,16,40.0,6,"lb",1787887199746],[259,16,40.0,5,"lb",1787887307707],[260,56,110.0,6,"lb",1787887482617],[261,56,110.0,6,"lb",1787887565450],[262,56,110.0,6,"lb",1787887695966],[263,26,27.0,10,"lb",1787887842862],[264,26,30.0,8,"lb",1787887940327],[265,26,33.0,6,"lb",1787888034193],[266,15,45.0,10,"lb",1788128262343],[267,15,65.0,10,"lb",1788128428317],[268,15,85.0,10,"lb",1788128589773],[269,11,45.0,10,"lb",1788128829507],[270,11,65.0,10,"lb",1788129059184],[271,11,95.0,8,"lb",1788129179373],[272,11,115.0,4,"lb",1788129396626],[273,56,55.0,10,"lb",1788129550570],[274,56,100.0,8,"lb",1788129630965],[275,56,120.0,5,"lb",1788129755235],[277,57,20.0,10,"lb",1788129993926],[279,57,25.0,10,"lb",1788130254793],[280,1,75.0,10,"lb",1789936594526],[281,1,95.0,6,"lb",1789936604178],[282,1,95.0,6,"lb",1789936608272],[283,1,95.0,5,"lb",1789936611982],[284,26,30.0,10,"lb",1789936701600],[285,26,35.0,6,"lb",1789936842302],[286,26,35.0,6,"lb",1789937016855],[287,4,7.5,10,"lb",1789937147998],[288,4,17.5,8,"lb",1789937426358],[289,4,17.5,5,"lb",1789937665918],[290,46,5.0,10,"lb",1793236647309],[291,46,30.0,10,"lb",1793236782969],[292,46,50.0,8,"lb",1793237015880],[293,46,70.0,6,"lb",1793237135660],[294,58,10.0,10,"lb",1793237500620],[295,58,30.0,10,"lb",1793237611236],[296,58,50.0,8,"lb",1793237761786],[297,58,70.0,6,"lb",1793237888512],[298,59,65.0,10,"kg",1793238107807],[299,59,75.0,10,"kg",1793238210298],[300,59,85.0,10,"kg",1793238315876],[301,59,90.0,10,"kg",1793238417370],[302,17,0.0,10,"lb",1793238716857],[303,17,2.5,10,"lb",1793238906768],[304,17,5.0,8,"lb",1793239076407],[305,23,10.0,10,"kg",1793239234834],[306,23,15.0,10,"kg",1793239480851],[307,6,85.0,8,"lb",1793583834073],[308,6,70.0,5,"lb",1793583920115],[309,6,70.0,6,"lb",1793584722242],[310,60,0.0,8,"lb",1793584750103],[311,60,10.0,8,"lb",1793584753608],[312,60,10.0,8,"lb",1793584754863],[313,60,10.0,8,"lb",1793585303761],[314,61,0.0,8,"lb",1793585329845],[315,61,20.0,10,"lb",1793585532625],[316,61,40.0,8,"lb",1793585858946],[317,62,10.0,8,"kg",1793586289052],[318,62,25.0,12,"kg",1793586358135],[319,62,35.0,6,"kg",1793586643683],[320,60,25.0,6,"kg",1793587054336],[321,62,35.0,6,"kg",1793587076073],[322,60,25.0,6,"kg",1793587367937],[323,8,10.0,15,"kg",1793587563991],[324,8,30.0,10,"kg",1793587862958],[325,8,50.0,4,"kg",1793588032660],[326,63,0.0,6,"lb",1793902671243],[327,23,20.0,6,"kg",1793902971356],[328,63,0.0,6,"lb",1793903029105],[329,23,20.0,8,"kg",1793903086067],[330,63,5.0,5,"lb",1793903277091],[331,23,20.0,8,"kg",1793903352684],[332,64,10.0,10,"kg",1793903756386],[333,64,20.0,10,"kg",1793903881038],[334,64,30.0,6,"kg",1793904000580],[335,64,30.0,6,"kg",1793904130014],[336,65,0.0,10,"lb",1793904268512],[337,65,10.0,8,"lb",1793904326440],[338,65,20.0,8,"lb",1793904441001],[339,65,20.0,3,"lb",1793904549121],[340,66,0.0,10,"lb",1794006691716],[341,66,50.0,10,"lb",1794006739008],[342,66,70.0,10,"lb",1794007143986],[343,66,90.0,8,"lb",1794007150950],[344,66,90.0,6,"lb",1794007381038],[345,67,0.0,8,"lb",1794007456933],[346,67,50.0,6,"lb",1794007584563],[347,67,50.0,8,"lb",1794007718173],[348,67,50.0,6,"lb",1794008027883],[349,1,85.0,8,"lb",1794008131116],[350,1,100.0,3,"lb",1794008304221],[351,1,100.0,6,"lb",1794008403577],[352,1,100.0,6,"lb",1794008640899],[353,41,10.0,10,"kg",1794008798670],[354,42,10.0,10,"kg",1794008807816],[355,42,40.0,10,"kg",1794008850661],[356,41,40.0,10,"kg",1794008888024],[357,42,50.0,8,"kg",1794009028704],[358,41,50.0,8,"kg",1794009063151],[359,41,50.0,8,"kg",1794009172838],[360,31,0.0,10,"lb",1794009427541],[362,31,50.0,8,"lb",1794009732616],[363,31,90.0,8,"lb",1794009742177],[364,31,100.0,6,"lb",1794010451878],[365,8,25.0,10,"kg",1794174964333],[366,56,25.0,8,"kg",1794175032354],[367,8,50.0,6,"kg",1794175124432],[369,56,30.0,6,"kg",1794175224048],[370,8,50.0,6,"kg",1794175366044],[371,60,25.0,6,"kg",1794175547485],[372,60,25.0,6,"kg",1794175670988],[373,60,25.0,8,"kg",1794175816950],[374,56,30.0,6,"lb",1794175913331],[376,60,30.0,6,"kg",1794176063413],[377,62,35.0,6,"kg",1794176578505],[379,62,35.0,8,"kg",1794176581958]],"cardioEx":[[1,"Stationary Bike"],[2,"Treadmill"],[3,"StairMaster"],[4,"Elliptical"],[5,"Rowing Machine"]],"cardio":[[2,2,5.0,0.22,"mi",44,null,12.0,1787438427879],[3,3,25.0,null,"mi",234,79,null,1787713278600],[4,1,40.0,10.0,"mi",300,null,null,1787886795934]],"plans":[{"date":"2026-11-08","items":[[8,50.0,4,"kg"],[60,25.0,6,"kg"],[62,35.0,6,"kg"],[56,120.0,5,"lb"],[63,5.0,5,"lb"],[23,20.0,8,"kg"]]}]};
+</script>
+<script>
+"use strict";
+/* ================= State (local-first) ================= */
+var LS_KEY = "workout-tracker-v1";
+var state = null;
+var queue = null; /* {date, items:[exId...]} active workout queue */
+
+function seedState(){
+  return {
+    exercises: SEED.exercises.map(function(e){return {id:e[0],name:e[1],group:e[2]};}),
+    sets: SEED.sets.map(function(s){return {id:s[0],ex:s[1],w:s[2],r:s[3],u:s[4],ts:s[5]};}),
+    cardioEx: SEED.cardioEx.map(function(c){return {id:c[0],name:c[1]};}),
+    cardio: SEED.cardio.map(function(c){return {id:c[0],ex:c[1],dur:c[2],dist:c[3],du:c[4],cal:c[5],floors:c[6],incline:c[7],ts:c[8]};}),
+    plans: SEED.plans.map(function(p){return {date:p.date, items:p.items.map(function(i){return {ex:i[0],w:i[1],r:i[2],u:i[3]};})};}),
+    nextSetId: 100000, nextCardioId: 100000, nextExId: 1000
+  };
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ /* storage blocked: in-memory still works */ }
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if(raw){ var s = JSON.parse(raw); if(s && s.sets && s.exercises){ state = s; return; } }
+  }catch(e){}
+  state = seedState(); save();
+}
+function exById(id){ for(var i=0;i<state.exercises.length;i++) if(state.exercises[i].id===id) return state.exercises[i]; return {name:"Exercise #"+id, group:"—"}; }
+function cardioById(id){ for(var i=0;i<state.cardioEx.length;i++) if(state.cardioEx[i].id===id) return state.cardioEx[i]; return {name:"Cardio #"+id}; }
+
+/* ================= Helpers ================= */
+function $(id){ return document.getElementById(id); }
+function pad(n){ return (n<10?"0":"")+n; }
+function dayKey(ts){ var d=new Date(ts); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function todayKey(){ return dayKey(Date.now()); }
+function fmtDay(key){
+  var p=key.split("-"); var d=new Date(+p[0],+p[1]-1,+p[2]);
+  return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+}
+function fmtTime(ts){ return new Date(ts).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}); }
+function fmtNum(n){ return (Math.round(n*10)/10).toLocaleString(); }
+function toKg(w,u){ return u==="kg" ? w : w/2.20462; }
+function fromKg(kg,u){ return u==="kg" ? kg : kg*2.20462; }
+/* Jacob's formula: est 1RM = weight / ((100 − reps × 2.5) / 100) */
+function oneRM(w,r){ if(!w||w<=0) return null; if(r<=1) return w; var d=(100-r*2.5)/100; if(d<=0.05) return null; return w/d; }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+var toastTimer=null;
+function toast(msg){ var t=$("toast"); t.textContent=msg; t.className="toast show"; clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.className="toast";},2600); }
+
+function setsOn(key){ return state.sets.filter(function(s){return dayKey(s.ts)===key;}).sort(function(a,b){return a.ts-b.ts;}); }
+function cardioOn(key){ return state.cardio.filter(function(c){return dayKey(c.ts)===key;}).sort(function(a,b){return a.ts-b.ts;}); }
+function bestSet(exId){
+  var best=null;
+  state.sets.forEach(function(s){
+    if(s.ex!==exId) return;
+    var rm=oneRM(s.w,s.r); if(rm===null) return;
+    var kg=toKg(rm,s.u);
+    if(!best || kg>best.kg) best={kg:kg, w:s.w, r:s.r, u:s.u, ts:s.ts};
+  });
+  return best;
+}
+function lastSession(exId){
+  var days={};
+  state.sets.forEach(function(s){ if(s.ex===exId) days[dayKey(s.ts)]=true; });
+  var keys=Object.keys(days).filter(function(k){return k!==todayKey();}).sort();
+  if(!keys.length) return null;
+  var k=keys[keys.length-1];
+  return {key:k, sets:state.sets.filter(function(s){return s.ex===exId && dayKey(s.ts)===k;}).sort(function(a,b){return a.ts-b.ts;})};
+}
+function lastSetOf(exId){
+  var list=state.sets.filter(function(s){return s.ex===exId;});
+  if(!list.length) return null;
+  return list.reduce(function(a,b){return b.ts>a.ts?b:a;});
+}
+function volumeKg(list){ return list.reduce(function(t,s){return t+toKg(s.w,s.u)*s.r;},0); }
+function strengthKcal(list){ return Math.round(list.length*8 + volumeKg(list)*0.002); }
+
+/* ================= Tabs ================= */
+document.querySelectorAll(".tab").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    document.querySelectorAll(".tab").forEach(function(b){b.setAttribute("aria-selected","false");});
+    btn.setAttribute("aria-selected","true");
+    document.querySelectorAll("section.view").forEach(function(v){v.classList.remove("active");});
+    $("view-"+btn.getAttribute("data-view")).classList.add("active");
+    if(btn.getAttribute("data-view")==="report") renderReport();
+    if(btn.getAttribute("data-view")==="history") renderHistory();
+    if(btn.getAttribute("data-view")==="plan") renderPlans();
+    window.scrollTo(0,0);
+  });
+});
+function gotoTab(name){ document.querySelector('.tab[data-view="'+name+'"]').click(); }
+
+/* ================= Header stats ================= */
+function renderHeader(){
+  var now=new Date();
+  $("todayLine").textContent = now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  var days={}; state.sets.forEach(function(s){days[dayKey(s.ts)]=true;});
+  state.cardio.forEach(function(c){days[dayKey(c.ts)]=true;});
+  var tSets=setsOn(todayKey()).length;
+  $("statRow").innerHTML =
+    '<div class="stat"><b>'+state.sets.length+'</b><span>Total sets</span></div>'+
+    '<div class="stat"><b>'+Object.keys(days).length+'</b><span>Workout days</span></div>'+
+    '<div class="stat"><b>'+tSets+'</b><span>Sets today</span></div>'+
+    '<div class="stat"><b>'+state.exercises.length+'</b><span>Exercises</span></div>';
+}
+
+/* ================= LIFT ================= */
+var typedDirty=false;
+function fillExerciseSelect(filter){
+  var sel=$("exSelect"); var cur=sel.value;
+  var groups={};
+  state.exercises.forEach(function(e){ (groups[e.group]=groups[e.group]||[]).push(e); });
+  var html="";
+  Object.keys(groups).sort().forEach(function(g){
+    var items=groups[g].filter(function(e){ return !filter || e.name.toLowerCase().indexOf(filter.toLowerCase())>=0; });
+    if(!items.length) return;
+    html+='<optgroup label="'+esc(g)+'">';
+    items.sort(function(a,b){return a.name<b.name?-1:1;}).forEach(function(e){ html+='<option value="'+e.id+'">'+esc(e.name)+'</option>'; });
+    html+="</optgroup>";
+  });
+  sel.innerHTML=html || '<option value="">No match</option>';
+  if(cur && sel.querySelector('option[value="'+cur+'"]')) sel.value=cur;
+  refreshHints(false);
+}
+function refreshHints(fromUser){
+  var id=+$("exSelect").value; var box=$("exHints");
+  if(!id){ box.innerHTML=""; $("lastSessionLine").textContent=""; return; }
+  var last=lastSetOf(id), best=bestSet(id), html="";
+  if(last) html+='<div class="hint"><span>Last set</span><b>'+fmtNum(last.w)+' '+last.u+' × '+last.r+'</b></div>';
+  if(best){
+    var rmU=best.u, rm=fromKg(best.kg,rmU), six=rm*0.85;
+    html+='<div class="hint"><span>Est. 1RM</span><b>'+fmtNum(rm)+' '+rmU+'</b></div>';
+    html+='<div class="hint hot"><span>Next session · 6RM target</span><b>'+fmtNum(six)+' '+rmU+'</b></div>';
+  }
+  box.innerHTML=html || '<div class="hint"><span>No history yet</span><b>First session</b></div>';
+  var ls=lastSession(id);
+  $("lastSessionLine").textContent = ls ? ("Last session "+fmtDay(ls.key)+": "+ls.sets.map(function(s){return fmtNum(s.w)+" "+s.u+" × "+s.r;}).join(" · ")) : "";
+  if(!fromUser && !typedDirty && last){ $("inWeight").value=last.w; $("inReps").value=last.r; $("inUnit").value=last.u; }
+}
+$("exSearch").addEventListener("input",function(){ fillExerciseSelect(this.value); });
+$("exSelect").addEventListener("change",function(){ typedDirty=false; refreshHints(false); });
+["inWeight","inReps"].forEach(function(id){ $(id).addEventListener("input",function(){ typedDirty=true; }); });
+$("inUnit").addEventListener("change",function(){ typedDirty=true; });
+
+$("logSetBtn").addEventListener("click",function(){
+  var exId=+$("exSelect").value;
+  var w=parseFloat($("inWeight").value), r=parseInt($("inReps").value,10);
+  if(!exId){ toast("Pick an exercise first."); return; }
+  if(!(w>0)){ toast("Enter a weight."); $("inWeight").focus(); return; }
+  if(!(r>=1)){ toast("Enter reps."); $("inReps").focus(); return; }
+  var s={id:state.nextSetId++, ex:exId, w:w, r:r, u:$("inUnit").value, ts:Date.now()};
+  state.sets.push(s); save(); /* local write — instant, no network */
+  typedDirty=false;
+  var rm=oneRM(w,r);
+  toast("Logged "+exById(exId).name+" — "+fmtNum(w)+" "+s.u+" × "+r+(rm?" · est 1RM "+fmtNum(rm)+" "+s.u:""));
+  renderAll();
+});
+
+function setListHTML(list, showEx){
+  if(!list.length) return '<p class="empty">Nothing logged yet.</p>';
+  var byEx={}, order=[];
+  list.forEach(function(s){ if(!byEx[s.ex]){byEx[s.ex]=[];order.push(s.ex);} byEx[s.ex].push(s); });
+  var html="";
+  order.forEach(function(exId){
+    var ex=exById(exId), sets=byEx[exId];
+    var vol=volumeKg(sets);
+    html+='<div class="exhead"><h3>'+esc(ex.name)+'</h3><span class="vol">'+esc(ex.group)+' · '+fmtNum(vol)+' kg volume</span></div><ul class="setlist">';
+    sets.forEach(function(s,i){
+      var rm=oneRM(s.w,s.r);
+      html+='<li><span class="setnum">'+(i+1)+'</span><span class="setmain"><b>'+fmtNum(s.w)+' '+s.u+' × '+s.r+'</b> '+
+        '<span class="setmeta">est 1RM '+(rm?fmtNum(rm)+' '+s.u:"—")+' · '+fmtTime(s.ts)+'</span></span>'+
+        '<button class="del" data-delset="'+s.id+'" aria-label="Delete set">×</button></li>';
+    });
+    html+="</ul>";
+  });
+  return html;
+}
+document.addEventListener("click",function(ev){
+  var b=ev.target.closest("[data-delset],[data-delcardio]");
+  if(!b) return;
+  if(b.hasAttribute("data-delset")){
+    var id=+b.getAttribute("data-delset");
+    state.sets=state.sets.filter(function(s){return s.id!==id;}); save(); toast("Set deleted."); renderAll();
+  }else{
+    var cid=+b.getAttribute("data-delcardio");
+    state.cardio=state.cardio.filter(function(c){return c.id!==cid;}); save(); toast("Cardio deleted."); renderAll();
+  }
+});
+
+function renderQueue(){
+  var box=$("queueBox");
+  if(!queue){ box.innerHTML=""; return; }
+  var tSets=setsOn(todayKey());
+  var doneCount=0;
+  var chips=queue.items.map(function(exId){
+    var done=tSets.some(function(s){return s.ex===exId;});
+    if(done) doneCount++;
+    var cls=done?"done":(queue.items[doneCount]===exId?"now":"");
+    return '<span class="qchip '+cls+'">'+esc(exById(exId).name)+(done?" ✓":"")+'</span>';
+  }).join("");
+  var pct=queue.items.length?Math.round(doneCount/queue.items.length*100):0;
+  box.innerHTML='<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:6px">'+
+    '<b>Workout queue</b> <span class="sub">— '+doneCount+' of '+queue.items.length+' exercises started</span>'+
+    '<div class="queuebar"><i style="width:'+pct+'%"></i></div><div class="queuechips">'+chips+'</div>'+
+    '<div class="btnrow"><button class="btn ghost small" id="endQueueBtn" type="button">End queue</button></div></div>';
+  $("endQueueBtn").addEventListener("click",function(){ queue=null; renderQueue(); toast("Queue cleared."); });
+}
+function renderToday(){
+  $("todaySets").innerHTML=setListHTML(setsOn(todayKey()));
+  $("todayCardio").innerHTML=cardioListHTML(cardioOn(todayKey()));
+}
+
+/* ================= PLAN ================= */
+function planItemRow(item){
+  var div=document.createElement("div"); div.className="planitem";
+  var opts=state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;})
+    .map(function(e){return '<option value="'+e.id+'"'+(item&&item.ex===e.id?" selected":"")+'>'+esc(e.name)+'</option>';}).join("");
+  div.innerHTML='<div class="grow"><label class="fl">Exercise</label><select class="pi-ex">'+opts+'</select></div>'+
+    '<div class="sm"><label class="fl">Weight</label><input class="pi-w" type="number" inputmode="decimal" step="0.5" value="'+(item?item.w:"")+'"></div>'+
+    '<div class="sm"><label class="fl">Reps</label><input class="pi-r" type="number" inputmode="numeric" step="1" value="'+(item?item.r:"")+'"></div>'+
+    '<div class="sm"><label class="fl">Unit</label><select class="pi-u"><option value="lb"'+(item&&item.u==="lb"?" selected":"")+'>lb</option><option value="kg"'+(item&&item.u==="kg"?" selected":"")+'>kg</option></select></div>'+
+    '<button class="del" type="button" aria-label="Remove exercise">×</button>';
+  div.querySelector(".del").addEventListener("click",function(){ div.remove(); });
+  div.querySelector(".pi-ex").addEventListener("change",function(){
+    var exId=+this.value, best=bestSet(exId), last=lastSetOf(exId);
+    if(best){ div.querySelector(".pi-w").value=Math.round(fromKg(best.kg*0.85,(last?last.u:"lb"))*2)/2; div.querySelector(".pi-u").value=(last?last.u:"lb"); div.querySelector(".pi-r").value=6; }
+    else if(last){ div.querySelector(".pi-w").value=last.w; div.querySelector(".pi-r").value=last.r; div.querySelector(".pi-u").value=last.u; }
+  });
+  return div;
+}
+$("addPlanItemBtn").addEventListener("click",function(){ $("planItems").appendChild(planItemRow(null)); });
+$("savePlanBtn").addEventListener("click",function(){
+  var date=$("planDate").value; if(!date){ toast("Pick a date."); return; }
+  var items=[];
+  $("planItems").querySelectorAll(".planitem").forEach(function(row){
+    items.push({ex:+row.querySelector(".pi-ex").value, w:parseFloat(row.querySelector(".pi-w").value)||null, r:parseInt(row.querySelector(".pi-r").value,10)||null, u:row.querySelector(".pi-u").value});
+  });
+  if(!items.length){ toast("Add at least one exercise."); return; }
+  state.plans=state.plans.filter(function(p){return p.date!==date;});
+  state.plans.push({date:date, items:items}); state.plans.sort(function(a,b){return a.date<b.date?-1:1;});
+  save(); renderPlans(); toast("Plan saved for "+fmtDay(date)+".");
+});
+function renderPlans(){
+  var box=$("planList");
+  if(!state.plans.length){ box.innerHTML='<p class="empty">No plans saved yet.</p>'; return; }
+  box.innerHTML=state.plans.slice().sort(function(a,b){return a.date<b.date?1:-1;}).map(function(p,pi){
+    var rows=p.items.map(function(it){
+      return '<li><span class="setmain"><b>'+esc(exById(it.ex).name)+'</b> <span class="setmeta">'+(it.w?fmtNum(it.w)+' '+it.u+' × '+it.r:"no target")+'</span></span></li>';
+    }).join("");
+    return '<div class="exhead"><h3>'+fmtDay(p.date)+'</h3></div><ul class="setlist">'+rows+'</ul>'+
+      '<div class="btnrow"><button class="btn small" data-startplan="'+p.date+'" type="button">Start workout</button>'+
+      '<button class="btn ghost small" data-delplan="'+p.date+'" type="button">Delete plan</button></div>';
+  }).join("");
+  box.querySelectorAll("[data-startplan]").forEach(function(b){
+    b.addEventListener("click",function(){
+      var p=state.plans.filter(function(x){return x.date===b.getAttribute("data-startplan");})[0];
+      if(!p) return;
+      queue={date:p.date, items:p.items.map(function(i){return i.ex;})};
+      gotoTab("lift"); renderQueue();
+      var first=p.items[0];
+      $("exSelect").value=first.ex; typedDirty=false; refreshHints(false);
+      if(first.w){ $("inWeight").value=first.w; $("inReps").value=first.r||""; $("inUnit").value=first.u; typedDirty=true; }
+      toast("Queue loaded — "+p.items.length+" exercises. Targets are prefilled in the plan.");
+    });
+  });
+  box.querySelectorAll("[data-delplan]").forEach(function(b){
+    b.addEventListener("click",function(){
+      state.plans=state.plans.filter(function(x){return x.date!==b.getAttribute("data-delplan");});
+      save(); renderPlans(); toast("Plan deleted.");
+    });
+  });
+}
+
+/* ================= CARDIO ================= */
+var CAL_RATE={"Stationary Bike":8,"Treadmill":10,"StairMaster":9,"Elliptical":8,"Rowing Machine":9};
+function fillCardioSelect(){
+  $("cardioSelect").innerHTML=state.cardioEx.map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join("");
+  cardioFields();
+}
+function cardioFields(){
+  var name=cardioById(+$("cardioSelect").value).name;
+  $("inclineRow").style.display = name==="Treadmill" ? "block":"none";
+  $("floorsRow").style.display = name==="StairMaster" ? "block":"none";
+  $("distRow").style.display = name==="StairMaster" ? "none":"grid";
+}
+$("cardioSelect").addEventListener("change",cardioFields);
+$("logCardioBtn").addEventListener("click",function(){
+  var exId=+$("cardioSelect").value, name=cardioById(exId).name;
+  var dur=parseFloat($("inDur").value);
+  if(!(dur>0)){ toast("Enter minutes."); $("inDur").focus(); return; }
+  var cal=parseInt($("inCal").value,10);
+  var estimated=false;
+  if(!(cal>0)){ cal=Math.round(dur*(CAL_RATE[name]||8)); estimated=true; }
+  var c={id:state.nextCardioId++, ex:exId, dur:dur,
+    dist: name==="StairMaster"?null:(parseFloat($("inDist").value)||null),
+    du:$("inDistUnit").value, cal:cal,
+    floors: name==="StairMaster"?(parseInt($("inFloors").value,10)||null):null,
+    incline: name==="Treadmill"?(parseFloat($("inIncline").value)||null):null,
+    ts:Date.now()};
+  state.cardio.push(c); save();
+  toast("Logged "+name+" — "+fmtNum(dur)+" min · "+cal+" kcal"+(estimated?" (est)":""));
+  ["inDur","inCal","inDist","inIncline","inFloors"].forEach(function(id){$(id).value="";});
+  renderAll();
+});
+function cardioListHTML(list){
+  if(!list.length) return '<p class="empty">No cardio logged yet.</p>';
+  return '<ul class="setlist">'+list.map(function(c){
+    var bits=[fmtNum(c.dur)+" min", c.cal+" kcal"];
+    if(c.dist) bits.push(fmtNum(c.dist)+" "+c.du);
+    if(c.floors) bits.push(c.floors+" floors");
+    if(c.incline) bits.push(c.incline+"% incline");
+    return '<li><span class="setmain"><b>'+esc(cardioById(c.ex).name)+'</b> <span class="setmeta">'+bits.join(" · ")+' · '+fmtTime(c.ts)+'</span></span>'+
+      '<button class="del" data-delcardio="'+c.id+'" aria-label="Delete cardio">×</button></li>';
+  }).join("")+"</ul>";
+}
+
+/* ================= REPORT ================= */
+var MUSCLE_MAP={Chest:["chest"],"Back":["lats","traps"],"Legs":["quads","calves"],"Shoulders":["delts"],"Biceps":["biceps"],"Triceps":["triceps"],"Glutes":["glutes"],"Core":["abs"]};
+function bodySVG(front, intensity){
+  function m(id,x,y,rx,ry){ var o=intensity[id]||0; return '<ellipse class="muscle" cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" '+(o>0?'style="fill:var(--accent);fill-opacity:'+(0.25+0.75*o).toFixed(2)+'"':"")+'/>'; }
+  var s='<svg width="130" height="240" viewBox="0 0 130 240" role="img" aria-label="'+(front?"Front":"Back")+' body map">';
+  s+='<circle class="muscle" cx="65" cy="18" r="12"/>';
+  if(front){
+    s+=m("delts",38,44,11,8)+m("delts",92,44,11,8);
+    s+=m("chest",65,48,20,10);
+    s+=m("biceps",30,72,7,14)+m("biceps",100,72,7,14);
+    s+=m("abs",65,78,13,20);
+    s+=m("quads",52,128,11,30)+m("quads",78,128,11,30);
+    s+=m("calves",52,182,8,18)+m("calves",78,182,8,18);
+  }else{
+    s+=m("delts",38,44,11,8)+m("delts",92,44,11,8);
+    s+=m("traps",65,46,16,10);
+    s+=m("lats",65,72,18,16);
+    s+=m("triceps",30,72,7,14)+m("triceps",100,72,7,14);
+    s+=m("glutes",65,112,20,11);
+    s+=m("quads",52,140,11,22)+m("quads",78,140,11,22);
+    s+=m("calves",52,186,8,18)+m("calves",78,186,8,18);
+  }
+  return s+"</svg>";
+}
+function reportData(key){
+  var sets=setsOn(key), cardio=cardioOn(key);
+  var byEx={}, order=[];
+  sets.forEach(function(s){ if(!byEx[s.ex]){byEx[s.ex]=[];order.push(s.ex);} byEx[s.ex].push(s); });
+  var groups={}, maxG=0;
+  order.forEach(function(exId){ var g=exById(exId).group; groups[g]=(groups[g]||0)+byEx[exId].length; if(groups[g]>maxG)maxG=groups[g]; });
+  var cal=strengthKcal(sets)+cardio.reduce(function(t,c){return t+(c.cal||0);},0);
+  return {key:key, sets:sets, cardio:cardio, byEx:byEx, order:order, groups:groups, maxG:maxG, cal:cal, vol:volumeKg(sets)};
+}
+function renderReport(){
+  var key=$("reportDate").value||todayKey();
+  var d=reportData(key);
+  var box=$("reportBody");
+  if(!d.sets.length && !d.cardio.length){ box.innerHTML='<p class="empty">No workout logged on '+fmtDay(key)+'.</p>'; return; }
+  var intensity={};
+  Object.keys(d.groups).forEach(function(g){ (MUSCLE_MAP[g]||[]).forEach(function(m){ intensity[m]=d.groups[g]/d.maxG; }); });
+  var html='<div class="stat-row">'+
+    '<div class="stat"><b>'+d.sets.length+'</b><span>Sets</span></div>'+
+    '<div class="stat"><b>'+fmtNum(d.vol)+'</b><span>Volume (kg)</span></div>'+
+    '<div class="stat"><b>'+d.cal+'</b><span>Est. calories</span></div>'+
+    '<div class="stat"><b>'+d.cardio.reduce(function(t,c){return t+c.dur;},0)+'</b><span>Cardio min</span></div></div>';
+  html+='<h3>Exercises</h3><table><thead><tr><th>Exercise</th><th class="r">Sets</th><th>Detail</th><th class="r">Best est 1RM</th></tr></thead><tbody>';
+  var oneRMrows=[];
+  d.order.forEach(function(exId){
+    var ex=exById(exId), sets=d.byEx[exId], best=null;
+    sets.forEach(function(s){ var rm=oneRM(s.w,s.r); if(rm!==null && (!best || toKg(rm,s.u)>toKg(best.rm,best.u))) best={rm:rm,u:s.u,w:s.w,r:s.r}; });
+    html+='<tr><td><b>'+esc(ex.name)+'</b><br><span class="setmeta">'+esc(ex.group)+'</span></td><td class="r">'+sets.length+'</td><td>'+
+      sets.map(function(s){return fmtNum(s.w)+" "+s.u+" × "+s.r;}).join("<br>")+'</td><td class="r">'+(best?fmtNum(best.rm)+" "+best.u:"—")+'</td></tr>';
+    if(best) oneRMrows.push({name:ex.name, rm:best.rm, u:best.u, w:best.w, r:best.r});
+  });
+  html+="</tbody></table>";
+  if(d.cardio.length){
+    html+='<h3>Cardio</h3>'+cardioListHTML(d.cardio).replace('data-delcardio','data-nodel');
+  }
+  if(oneRMrows.length){
+    html+='<h3>Estimated 1RM · '+fmtDay(key)+'</h3><table><thead><tr><th>Exercise</th><th>From set</th><th class="r">Est 1RM</th><th class="r">6RM target (×0.85)</th></tr></thead><tbody>'+
+      oneRMrows.map(function(r){ return '<tr><td><b>'+esc(r.name)+'</b></td><td>'+fmtNum(r.w)+' '+r.u+' × '+r.r+'</td><td class="r">'+fmtNum(r.rm)+' '+r.u+'</td><td class="r">'+fmtNum(r.rm*0.85)+' '+r.u+'</td></tr>'; }).join("")+
+      "</tbody></table>";
+  }
+  html+='<h3>Muscles worked</h3><div class="bodymap"><figure>'+bodySVG(true,intensity)+'<figcaption>Front</figcaption></figure><figure>'+bodySVG(false,intensity)+'<figcaption>Back</figcaption></figure></div>'+
+    '<div class="legend">'+Object.keys(d.groups).map(function(g){return "<span>"+esc(g)+" · "+d.groups[g]+" sets</span>";}).join("")+"</div>";
+  box.innerHTML=html;
+}
+function reportText(key){
+  var d=reportData(key), lines=["WORKOUT REPORT — "+fmtDay(key),""];
+  lines.push("Sets: "+d.sets.length+" · Volume: "+fmtNum(d.vol)+" kg · Est. calories: "+d.cal);
+  d.order.forEach(function(exId){
+    var ex=exById(exId);
+    lines.push("", ex.name+" ("+ex.group+")");
+    d.byEx[exId].forEach(function(s,i){ var rm=oneRM(s.w,s.r); lines.push("  Set "+(i+1)+": "+fmtNum(s.w)+" "+s.u+" × "+s.r+(rm?" — est 1RM "+fmtNum(rm)+" "+s.u:"")); });
+  });
+  if(d.cardio.length){ lines.push("","Cardio:"); d.cardio.forEach(function(c){ lines.push("  "+cardioById(c.ex).name+": "+fmtNum(c.dur)+" min"+(c.dist?", "+fmtNum(c.dist)+" "+c.du:"")+(c.floors?", "+c.floors+" floors":"")+(c.incline?", "+c.incline+"% incline":"")+", "+(c.cal||0)+" kcal"); }); }
+  lines.push("","Muscles worked: "+Object.keys(d.groups).join(", "));
+  return lines.join("\n");
+}
+function download(name, text, type){
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type:type||"text/plain"})); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},400);
+}
+$("reportDate").addEventListener("change",renderReport);
+$("dlReportBtn").addEventListener("click",function(){ var k=$("reportDate").value||todayKey(); download("workout-report-"+k+".txt", reportText(k)); });
+$("copyReportBtn").addEventListener("click",function(){
+  var k=$("reportDate").value||todayKey();
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(reportText(k)).then(function(){toast("Report copied.");},function(){toast("Copy blocked — use Download instead.");}); }
+  else toast("Copy not available — use Download instead.");
+});
+
+/* ================= Data: export / import / reset ================= */
+function exportObj(){
+  return {
+    exercises: state.exercises.map(function(e){return {id:e.id,name:e.name,muscle_group:e.group};}),
+    sets: state.sets.map(function(s){return {id:s.id,exercise_id:s.ex,weight:s.w,reps:s.r,unit:s.u,created_at:s.ts};}),
+    cardio_exercises: state.cardioEx.map(function(c){return {id:c.id,name:c.name};}),
+    cardio_logs: state.cardio.map(function(c){return {id:c.id,cardio_exercise_id:c.ex,duration_minutes:c.dur,distance:c.dist,distance_unit:c.du,calories:c.cal,floors:c.floors,incline:c.incline,created_at:c.ts};}),
+    day_plans: state.plans.map(function(p,i){return {id:i+1,date:p.date};}),
+    day_plan_items: state.plans.reduce(function(acc,p,pi){ p.items.forEach(function(it,ii){ acc.push({plan_id:pi+1,exercise_id:it.ex,position:ii,target_weight:it.w,target_reps:it.r,target_unit:it.u}); }); return acc; },[])
+  };
+}
+$("expJsonBtn").addEventListener("click",function(){ download("workout-history.json", JSON.stringify(exportObj(),null,2), "application/json"); toast("History exported as JSON."); });
+$("expCsvBtn").addEventListener("click",function(){
+  var rows=[["date","time","exercise","muscle_group","weight","unit","reps","est_1rm"]];
+  state.sets.slice().sort(function(a,b){return a.ts-b.ts;}).forEach(function(s){
+    var ex=exById(s.ex), rm=oneRM(s.w,s.r);
+    rows.push([dayKey(s.ts), fmtTime(s.ts), '"'+ex.name.replace(/"/g,'""')+'"', ex.group, s.w, s.u, s.r, rm?Math.round(rm*10)/10:""]);
+  });
+  download("workout-history.csv", rows.map(function(r){return r.join(",");}).join("\n"), "text/csv");
+  toast("History exported as CSV — open it in a spreadsheet or print it as your PDF table.");
+});
+$("importBtn").addEventListener("click",function(){ $("importFile").click(); });
+$("importFile").addEventListener("change",function(){
+  var f=this.files[0]; if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    try{
+      var d=JSON.parse(rd.result);
+      var ns={
+        exercises:(d.exercises||[]).map(function(e){return {id:e.id,name:e.name,group:e.muscle_group||e.group||"—"};}),
+        sets:(d.sets||[]).map(function(s){return {id:s.id,ex:s.exercise_id,w:s.weight,r:s.reps,u:s.unit,ts:s.created_at};}),
+        cardioEx:(d.cardio_exercises||[]).map(function(c){return {id:c.id,name:c.name};}),
+        cardio:(d.cardio_logs||[]).map(function(c){return {id:c.id,ex:c.cardio_exercise_id,dur:c.duration_minutes,dist:c.distance,du:c.distance_unit,cal:c.calories,floors:c.floors,incline:c.incline,ts:c.created_at};}),
+        plans:(d.day_plans||[]).map(function(p){ return {date:p.date, items:(d.day_plan_items||[]).filter(function(i){return i.plan_id===p.id;}).sort(function(a,b){return a.position-b.position;}).map(function(i){return {ex:i.exercise_id,w:i.target_weight,r:i.target_reps,u:i.target_unit};})}; }),
+        nextSetId:100000, nextCardioId:100000, nextExId:1000
+      };
+      if(!ns.sets.length && !ns.exercises.length) throw new Error("empty");
+      state=ns; save(); queue=null; initSelects(); renderAll();
+      toast("Imported "+ns.sets.length+" sets.");
+    }catch(e){ toast("That file doesn't look like a tracker export."); }
+    $("importFile").value="";
+  };
+  rd.readAsText(f);
+});
+$("resetBtn").addEventListener("click",function(){
+  if(this.getAttribute("data-armed")){ state=seedState(); save(); queue=null; initSelects(); renderAll(); this.removeAttribute("data-armed"); this.textContent="Reset to imported history"; toast("Reset to the imported history (370 sets)."); }
+  else{ this.setAttribute("data-armed","1"); this.textContent="Tap again to confirm reset"; }
+});
+
+/* ================= HISTORY ================= */
+function renderHistory(){
+  var f=$("histFilter").value;
+  var days={};
+  state.sets.forEach(function(s){ if(!f || s.ex===+f) days[dayKey(s.ts)]=true; });
+  var cDays={};
+  if(!f) state.cardio.forEach(function(c){ cDays[dayKey(c.ts)]=true; });
+  var keys=Object.keys(days).concat(Object.keys(cDays).filter(function(k){return !days[k];})).sort().reverse();
+  if(!keys.length){ $("historyBody").innerHTML='<p class="empty">No history yet.</p>'; return; }
+  $("historyBody").innerHTML=keys.slice(0,60).map(function(k){
+    var list=setsOn(k).filter(function(s){return !f || s.ex===+f;});
+    var cd=cardioOn(k);
+    return '<div class="dayblock"><h3>'+fmtDay(k)+'<span>'+list.length+' sets'+(cd.length?" · "+cd.length+" cardio":"")+'</span></h3>'+
+      setListHTML(list)+(f?"":cardioListHTML(cd))+"</div>";
+  }).join("");
+  if(keys.length>60) $("historyBody").innerHTML+='<p class="note">Showing the most recent 60 days — export JSON/CSV for the full record.</p>';
+}
+$("histFilter").addEventListener("change",renderHistory);
+
+/* ================= Init ================= */
+function initSelects(){
+  fillExerciseSelect("");
+  fillCardioSelect();
+  $("histFilter").innerHTML='<option value="">All exercises</option>'+state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;}).map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join("");
+}
+function renderAll(){
+  renderHeader(); renderToday(); renderQueue(); refreshHints(true);
+  if($("view-report").classList.contains("active")) renderReport();
+  if($("view-history").classList.contains("active")) renderHistory();
+}
+load();
+$("planDate").value=todayKey();
+$("reportDate").value=todayKey();
+initSelects();
+if(!$("planItems").children.length) $("planItems").appendChild(planItemRow(state.plans.length?state.plans[state.plans.length-1].items[0]:null));
+renderPlans();
+renderAll();
+$("dataNote").textContent="Currently holding "+state.sets.length+" sets, "+state.cardio.length+" cardio logs, and "+state.plans.length+" saved plan(s) in this browser.";
+</script>
+</body>
+</html>
