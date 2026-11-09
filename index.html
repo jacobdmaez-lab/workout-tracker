@@ -48,6 +48,12 @@
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;box-shadow:var(--shadow)}
   .stat b{font-family:"Barlow Condensed",sans-serif;font-size:24px;display:block;line-height:1}
   .stat span{font-size:12px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+  .custombtn{flex:1 1 150px;align-self:stretch;display:flex;align-items:center;justify-content:center;gap:4px;
+    background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);border-radius:10px;padding:8px 14px;
+    font-family:"Barlow Condensed",sans-serif;font-size:19px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    cursor:pointer;box-shadow:var(--shadow);min-height:52px}
+  .custombtn:active{transform:translateY(1px)}
+  .custombtn[aria-expanded="true"]{background:var(--accent-hover);border-color:var(--accent-hover)}
   /* tabs */
   .tabs{position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 0 8px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
   .tabs::-webkit-scrollbar{display:none}
@@ -157,6 +163,21 @@
   </div>
   <div class="stat-row" id="statRow"></div>
 
+  <div class="custombox" id="customExBox" style="display:none">
+    <h3>Add a custom exercise</h3>
+    <p class="sub">Custom exercises are public — they appear in the picker for everyone who visits this page.</p>
+    <label class="fl" for="cxName">Exercise name</label>
+    <input id="cxName" type="text" placeholder="e.g. Cable Pull-Through" autocomplete="off" />
+    <label class="fl" for="cxGroupSel">Muscle group</label>
+    <select id="cxGroupSel"></select>
+    <div id="cxGroupNewWrap" style="display:none">
+      <label class="fl" for="cxGroupNew">New muscle group name</label>
+      <input id="cxGroupNew" type="text" placeholder="e.g. Forearms" autocomplete="off" />
+    </div>
+    <div class="btnrow"><button class="btn secondary" id="addCustomExBtn" type="button">Add exercise</button></div>
+    <p class="note" id="cxNote"></p>
+  </div>
+
   <nav class="tabs" role="tablist" aria-label="Tracker sections">
     <button class="tab" role="tab" data-view="lift" aria-selected="true">Lift</button>
     <button class="tab" role="tab" data-view="plan" aria-selected="false">Plan</button>
@@ -174,20 +195,6 @@
       <div class="grouplist" id="groupChips" role="group" aria-labelledby="groupLabel"></div>
       <label class="fl" for="exSelect">Exercise</label>
       <select id="exSelect"></select>
-      <div class="custombox" id="customExBox" style="display:none">
-        <h3>Add a custom exercise</h3>
-        <p class="sub">Custom exercises are public — they appear in the picker for everyone who visits this page.</p>
-        <label class="fl" for="cxName">Exercise name</label>
-        <input id="cxName" type="text" placeholder="e.g. Cable Pull-Through" autocomplete="off" />
-        <label class="fl" for="cxGroupSel">Muscle group</label>
-        <select id="cxGroupSel"></select>
-        <div id="cxGroupNewWrap" style="display:none">
-          <label class="fl" for="cxGroupNew">New muscle group name</label>
-          <input id="cxGroupNew" type="text" placeholder="e.g. Forearms" autocomplete="off" />
-        </div>
-        <div class="btnrow"><button class="btn secondary" id="addCustomExBtn" type="button">Add exercise</button></div>
-        <p class="note" id="cxNote"></p>
-      </div>
       <div class="hints" id="exHints"></div>
       <div class="grid3">
         <div><label class="fl" for="inWeight">Weight</label><input id="inWeight" type="number" inputmode="decimal" step="0.5" min="0" /></div>
@@ -555,7 +562,7 @@ function initFirebaseAuth(){
       if(signInBtn) signInBtn.style.display="none";
       if(signOutBtn) signOutBtn.style.display="";
       if(authUserEl){ authUserEl.style.display=""; authUserEl.innerHTML = "Signed in as <b>"+ (user.displayName ? escapeHtml(user.displayName) : "") +"</b>"+ (user.email ? "<br>"+escapeHtml(user.email) : ""); }
-      var cxBox=document.getElementById("customExBox"); if(cxBox) cxBox.style.display="";
+      var cxBtn=document.getElementById("customExBtn"); if(cxBtn) cxBtn.style.display="";
       setSyncStatus("saving","Syncing\u2026");
       handleSignInSync(user);
     } else {
@@ -568,6 +575,8 @@ function initFirebaseAuth(){
       if(signInBtn) signInBtn.style.display="";
       if(signOutBtn) signOutBtn.style.display="none";
       if(authUserEl){ authUserEl.style.display="none"; authUserEl.textContent=""; }
+      customOpen=false;
+      var cxBtn2=document.getElementById("customExBtn"); if(cxBtn2) cxBtn2.style.display="none";
       var cxBox2=document.getElementById("customExBox"); if(cxBox2) cxBox2.style.display="none";
       if(hadUser && syncWasClean){
         lastCloudSyncOk = false;
@@ -688,6 +697,7 @@ document.querySelectorAll(".tab").forEach(function(btn){
 function gotoTab(name){ document.querySelector('.tab[data-view="'+name+'"]').click(); }
 
 /* ================= Header stats ================= */
+var customOpen=false; /* custom-exercise panel under the stats row: collapsed by default */
 function renderHeader(){
   var now=new Date();
   $("todayLine").textContent = now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
@@ -698,8 +708,17 @@ function renderHeader(){
     '<div class="stat"><b>'+state.sets.length+'</b><span>Total sets</span></div>'+
     '<div class="stat"><b>'+Object.keys(days).length+'</b><span>Workout days</span></div>'+
     '<div class="stat"><b>'+tSets+'</b><span>Sets today</span></div>'+
-    '<div class="stat"><b>'+state.exercises.length+'</b><span>Exercises</span></div>';
+    '<div class="stat"><b>'+state.exercises.length+'</b><span>Exercises</span></div>'+
+    '<button type="button" class="custombtn" id="customExBtn" aria-expanded="'+(customOpen?"true":"false")+'" aria-controls="customExBox"'+(currentUser?'':' style="display:none"')+'>+ Custom Exercise</button>';
 }
+document.addEventListener("click",function(ev){
+  var b=ev.target.closest("#customExBtn");
+  if(!b) return;
+  customOpen=!customOpen;
+  var box=$("customExBox"); if(box) box.style.display=customOpen?"":"none";
+  b.setAttribute("aria-expanded",customOpen?"true":"false");
+  if(customOpen){ var n=$("cxName"); if(n) n.focus(); }
+});
 
 /* ================= LIFT ================= */
 var typedDirty=false;
