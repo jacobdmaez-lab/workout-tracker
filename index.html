@@ -11,14 +11,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#f4f2ec; --panel:#fffdf8; --panel2:#eceade; --ink:#17181c; --ink2:#55534b;
-    --line:#d9d5c7; --accent:#e8490f; --accent-ink:#fff; --good:#1e7d46;
-    --chip:#eceade; --danger:#b3261e; --shadow:0 1px 2px rgba(20,18,10,.08),0 4px 14px rgba(20,18,10,.06);
+    /* Old tracker palette (gym-workout-tracker theme.css) — blue primary #2F6F8E, brown/clay accent #BD7B75 */
+    --bg:#F8ECE8; --panel:#FFF8F6; --panel2:#F0DDD8; --panel3:#E8CFC9; --ink:#433235; --ink2:#6E5A5C;
+    --dim:#8E7D7E; --line:#E4C8C2; --line-strong:#C8A8A2; --accent:#2F6F8E; --accent-hover:#244F66;
+    --accent-light:#C3DAE6; --accent-glow:#5A9FC2; --accent-ink:#fff; --on-accent:#fff; --good:#2F6F8E;
+    --clay:#BD7B75; --clay-hover:#A35F59; --clay-light:#EAC3BF; --clay-soft:#F5DDDA; --clay-deep:#7A4A48; --on-clay:#fff;
+    --chip:#F0DDD8; --danger:#A35F59; --shadow:0 1px 2px rgba(67,50,53,.08),0 4px 14px rgba(67,50,53,.07);
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#121316; --panel:#1b1d21; --panel2:#23262c; --ink:#f2efe7; --ink2:#a9a79e;
-      --line:#33363d; --accent:#ff5c1f; --chip:#26292f; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+      --bg:#302528; --panel:#453A3E; --panel2:#574C52; --panel3:#655A60; --ink:#FDF0EF; --ink2:#E8D0CE;
+      --dim:#BEA6A4; --line:#605055; --line-strong:#806B70; --accent:#6FB4D1; --accent-hover:#8CC9E2;
+      --accent-light:#2D4550; --accent-glow:#86C8E2; --accent-ink:#302528; --on-accent:#302528; --good:#6FB4D1;
+      --clay:#D89E99; --clay-hover:#E8B3AE; --clay-light:#5A4040; --clay-soft:#4D3A3D; --clay-deep:#E9C0BC; --on-clay:#302528;
+      --chip:#574C52; --danger:#E8B3AE; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
     }
   }
   *{box-sizing:border-box}
@@ -33,12 +39,8 @@
   .auth-user{font-size:14px;color:var(--ink2);text-align:right;word-break:break-word}
   .auth-user b{color:var(--ink)}
   .sync-status{font-size:13px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--ink2);white-space:nowrap}
-  .sync-status.saved{background:#e6f4ea;color:#137333}
-  .sync-status.saving{background:#fef7e0;color:#7a5a00}
-  @media (prefers-color-scheme: dark){
-    .sync-status.saved{background:#1e3a2a;color:#81c995}
-    .sync-status.saving{background:#3a2f10;color:#fdd663}
-  }
+  .sync-status.saved{background:var(--accent-light);color:var(--accent-hover)}
+  .sync-status.saving{background:var(--clay-soft);color:var(--clay-deep)}
   .google-btn{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:9px 16px;font-family:"Barlow",sans-serif;font-weight:600;font-size:15px;cursor:pointer;box-shadow:var(--shadow)}
   .google-btn:active{transform:translateY(1px)}
   @media (max-width:560px){.auth-box{align-items:flex-start;margin-top:8px}.auth-user{text-align:left}}
@@ -51,7 +53,7 @@
   .tabs::-webkit-scrollbar{display:none}
   .tab{flex:1 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:999px;
        padding:9px 16px;font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:600;letter-spacing:.05em;cursor:pointer;text-transform:uppercase}
-  .tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
   @media (max-width:560px){
     .tabs{flex-wrap:wrap;overflow-x:visible}
     .tab{flex:1 1 30%;padding:8px 4px;font-size:16px}
@@ -83,8 +85,8 @@
   .hint{background:var(--chip);border-radius:10px;padding:8px 12px;font-size:14px}
   .hint b{font-family:"Barlow Semi Condensed",sans-serif;font-size:16px}
   .hint span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2)}
-  .hint.hot{background:var(--accent);color:var(--accent-ink)}
-  .hint.hot span{color:var(--accent-ink);opacity:.85}
+  .hint.hot{background:var(--clay);color:var(--on-clay)}
+  .hint.hot span{color:var(--on-clay);opacity:.85}
   /* set lists */
   .setlist{list-style:none;margin:8px 0 0;padding:0}
   .setlist li{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
@@ -105,14 +107,14 @@
   .queuebar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
   .queuechips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
   .qchip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600;background:var(--panel)}
-  .qchip.done{background:var(--good);border-color:var(--good);color:#fff}
+  .qchip.done{background:var(--good);border-color:var(--good);color:var(--on-accent)}
   .qchip.now{border-color:var(--accent);color:var(--accent)}
   table{width:100%;border-collapse:collapse;font-size:15px}
   th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);text-align:left;padding:8px 6px;border-bottom:2px solid var(--line)}
   td{padding:8px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:top}
   td.r,th.r{text-align:right}
   .dayblock{margin-top:18px}
-  .dayblock>h3{font-size:20px;border-bottom:2px solid var(--ink);padding-bottom:4px;display:flex;justify-content:space-between;align-items:baseline}
+  .dayblock>h3{font-size:20px;border-bottom:2px solid var(--line-strong);padding-bottom:4px;display:flex;justify-content:space-between;align-items:baseline}
   .dayblock>h3 span{font-family:"Barlow",sans-serif;font-size:13px;color:var(--ink2);text-transform:none;letter-spacing:0}
   .bodymap{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
   .bodymap figure{margin:0;text-align:center}
@@ -126,7 +128,14 @@
   .planitem .grow{flex:2 1 160px}.planitem .sm{flex:1 1 70px}
   .planitem label.fl{margin-top:0}
   footer{margin-top:26px;color:var(--ink2);font-size:13px;text-align:center}
-  .search{margin-top:10px}
+  .grouplist{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .gchip{border:1px solid var(--line-strong);background:var(--panel);color:var(--ink2);border-radius:999px;
+    padding:8px 14px;font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;font-size:15px;cursor:pointer}
+  .gchip .cnt{opacity:.7;font-size:12px;margin-left:5px;font-variant-numeric:tabular-nums}
+  .gchip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+  .gchip[aria-pressed="true"] .cnt{opacity:.85}
+  .custombox{border:1px dashed var(--line-strong);border-radius:12px;padding:14px;margin-top:18px;background:var(--clay-soft)}
+  .custombox h3{margin-top:0}
   details{margin-top:10px}
   summary{cursor:pointer;font-weight:600;font-size:15px}
 </style>
@@ -161,10 +170,24 @@
     <div class="card">
       <h2>Log a set</h2>
       <div id="queueBox"></div>
-      <label class="fl" for="exSearch">Find exercise</label>
-      <input class="search" id="exSearch" type="search" placeholder="Search 67 exercises…" autocomplete="off" style="margin-top:0" />
+      <span class="fl" id="groupLabel">Muscle group</span>
+      <div class="grouplist" id="groupChips" role="group" aria-labelledby="groupLabel"></div>
       <label class="fl" for="exSelect">Exercise</label>
       <select id="exSelect"></select>
+      <div class="custombox" id="customExBox" style="display:none">
+        <h3>Add a custom exercise</h3>
+        <p class="sub">Custom exercises are public — they appear in the picker for everyone who visits this page.</p>
+        <label class="fl" for="cxName">Exercise name</label>
+        <input id="cxName" type="text" placeholder="e.g. Cable Pull-Through" autocomplete="off" />
+        <label class="fl" for="cxGroupSel">Muscle group</label>
+        <select id="cxGroupSel"></select>
+        <div id="cxGroupNewWrap" style="display:none">
+          <label class="fl" for="cxGroupNew">New muscle group name</label>
+          <input id="cxGroupNew" type="text" placeholder="e.g. Forearms" autocomplete="off" />
+        </div>
+        <div class="btnrow"><button class="btn secondary" id="addCustomExBtn" type="button">Add exercise</button></div>
+        <p class="note" id="cxNote"></p>
+      </div>
       <div class="hints" id="exHints"></div>
       <div class="grid3">
         <div><label class="fl" for="inWeight">Weight</label><input id="inWeight" type="number" inputmode="decimal" step="0.5" min="0" /></div>
@@ -287,6 +310,7 @@ var CATALOG = {"exercises":[[1,"Bench Press","Chest"],[2,"Incline DB Press","Che
 var LS_KEY = "workout-tracker-v1";
 var state = null;
 var queue = null; /* {date, items:[exId...]} active workout queue */
+var publicExercises = []; /* [{name, group}] from Firestore publicExercises — public for every visitor */
 
 function seedState(){
   return {
@@ -371,6 +395,40 @@ function normalizeCloudState(cs){
   s.nextSetId = s.nextSetId || 100000; s.nextCardioId = s.nextCardioId || 100000; s.nextExId = s.nextExId || 1000;
   return s;
 }
+/* ===== Public exercises (Firestore collection: publicExercises) =====
+   Read on every page load, signed in or out; merged with the shipped catalog,
+   deduped by name + muscle group. Writes happen only while signed in. */
+function exKey(name, group){ return String(name||"").trim().toLowerCase()+"|"+String(group||"").trim().toLowerCase(); }
+function mergePublicExercises(){
+  if(!state || !publicExercises.length) return false;
+  var changed=false;
+  publicExercises.forEach(function(p){
+    var key=exKey(p.name,p.group), exists=false;
+    state.exercises.forEach(function(e){ if(exKey(e.name,e.group)===key) exists=true; });
+    if(!exists){ state.exercises.push({id:state.nextExId++, name:p.name, group:p.group}); changed=true; }
+  });
+  if(changed){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+    scheduleCloudSave();
+    try{ refreshExercisePickers(null); }catch(e){}
+    try{ renderHeader(); }catch(e){}
+  }
+  return changed;
+}
+function loadPublicExercises(){
+  if(!fbDb) return;
+  fbDb.collection("publicExercises").get().then(function(snap){
+    var list=[];
+    snap.forEach(function(doc){
+      var d=doc.data()||{};
+      var nm=String(d.name||"").trim();
+      var g=String(d.muscleGroup||d.group||"").trim();
+      if(nm && g) list.push({name:nm, group:g});
+    });
+    publicExercises=list;
+    mergePublicExercises();
+  }).catch(function(err){ console.warn("Public exercises load failed", err); });
+}
 function mergeStates(localState, cloudState){
   function mergeById(localArr, cloudArr){
     var map = {};
@@ -406,6 +464,7 @@ function applyCloudState(newState, shouldUpload){
   try{ renderAll(); }catch(e){}
   var dn = document.getElementById("dataNote");
   if(dn && state) dn.textContent = "Currently holding "+state.sets.length+" sets, "+state.cardio.length+" cardio logs, and "+state.plans.length+" saved plan(s).";
+  try{ mergePublicExercises(); }catch(e){}
   if(shouldUpload){ cloudSyncReady = true; pushToCloud(); } else { lastCloudSyncOk = true; setSyncStatus("saved","Saved to cloud"); }
 }
 async function handleSignInSync(user){
@@ -496,6 +555,7 @@ function initFirebaseAuth(){
       if(signInBtn) signInBtn.style.display="none";
       if(signOutBtn) signOutBtn.style.display="";
       if(authUserEl){ authUserEl.style.display=""; authUserEl.innerHTML = "Signed in as <b>"+ (user.displayName ? escapeHtml(user.displayName) : "") +"</b>"+ (user.email ? "<br>"+escapeHtml(user.email) : ""); }
+      var cxBox=document.getElementById("customExBox"); if(cxBox) cxBox.style.display="";
       setSyncStatus("saving","Syncing\u2026");
       handleSignInSync(user);
     } else {
@@ -508,6 +568,7 @@ function initFirebaseAuth(){
       if(signInBtn) signInBtn.style.display="";
       if(signOutBtn) signOutBtn.style.display="none";
       if(authUserEl){ authUserEl.style.display="none"; authUserEl.textContent=""; }
+      var cxBox2=document.getElementById("customExBox"); if(cxBox2) cxBox2.style.display="none";
       if(hadUser && syncWasClean){
         lastCloudSyncOk = false;
         clearLocalHistoryOnSignOut();
@@ -534,6 +595,7 @@ function clearLocalHistoryOnSignOut(){
   try{ renderAll(); }catch(e){}
   var dn = document.getElementById("dataNote");
   if(dn) dn.textContent = "Currently holding 0 sets, 0 cardio logs, and 0 saved plan(s) in this browser. Sign in to load your history from the cloud.";
+  try{ mergePublicExercises(); }catch(e){}
 }
 var SEED_PURGED_KEY = "workout-tracker-seed-purged-v1";
 function purgePreloadedSeedOnce(){
@@ -641,21 +703,67 @@ function renderHeader(){
 
 /* ================= LIFT ================= */
 var typedDirty=false;
-function fillExerciseSelect(filter){
-  var sel=$("exSelect"); var cur=sel.value;
-  var groups={};
-  state.exercises.forEach(function(e){ (groups[e.group]=groups[e.group]||[]).push(e); });
-  var html="";
-  Object.keys(groups).sort().forEach(function(g){
-    var items=groups[g].filter(function(e){ return !filter || e.name.toLowerCase().indexOf(filter.toLowerCase())>=0; });
-    if(!items.length) return;
-    html+='<optgroup label="'+esc(g)+'">';
-    items.sort(function(a,b){return a.name<b.name?-1:1;}).forEach(function(e){ html+='<option value="'+e.id+'">'+esc(e.name)+'</option>'; });
-    html+="</optgroup>";
+var liftGroup=null; /* selected muscle group in the LIFT picker */
+function allGroups(){
+  var seen={}, out=[];
+  state.exercises.forEach(function(e){ if(e.group && !seen[e.group]){ seen[e.group]=1; out.push(e.group); } });
+  return out.sort();
+}
+function exercisesInGroup(g){
+  return state.exercises.filter(function(e){return e.group===g;})
+    .sort(function(a,b){ return a.name<b.name?-1:(a.name>b.name?1:0); });
+}
+function renderGroupChips(){
+  var box=$("groupChips"); if(!box) return;
+  var groups=allGroups();
+  if(!liftGroup || groups.indexOf(liftGroup)<0) liftGroup=groups[0]||null;
+  box.innerHTML=groups.map(function(g){
+    return '<button type="button" class="gchip" data-group="'+esc(g)+'" aria-pressed="'+(g===liftGroup?"true":"false")+'">'+esc(g)+'<span class="cnt">'+exercisesInGroup(g).length+'</span></button>';
+  }).join("");
+  box.querySelectorAll("[data-group]").forEach(function(b){
+    b.addEventListener("click",function(){ liftGroup=b.getAttribute("data-group"); renderGroupChips(); fillExerciseSelect(); });
   });
-  sel.innerHTML=html || '<option value="">No match</option>';
+}
+function fillExerciseSelect(keepId){
+  var sel=$("exSelect"); if(!sel) return;
+  var cur=(keepId!=null && keepId!=="") ? String(keepId) : sel.value;
+  if(!liftGroup || !exercisesInGroup(liftGroup).length) renderGroupChips();
+  var items=liftGroup?exercisesInGroup(liftGroup):[];
+  sel.innerHTML=items.length
+    ? items.map(function(e){ return '<option value="'+e.id+'">'+esc(e.name)+'</option>'; }).join("")
+    : '<option value="">No exercises in this group</option>';
   if(cur && sel.querySelector('option[value="'+cur+'"]')) sel.value=cur;
   refreshHints(false);
+}
+function selectExerciseById(id){
+  var ex=null;
+  state.exercises.forEach(function(e){ if(e.id===id) ex=e; });
+  if(!ex) return;
+  liftGroup=ex.group;
+  renderGroupChips();
+  fillExerciseSelect(id);
+}
+function renderCustomGroupOptions(){
+  var sel=$("cxGroupSel"); if(!sel) return;
+  var cur=sel.value;
+  sel.innerHTML=allGroups().map(function(g){ return '<option value="'+esc(g)+'">'+esc(g)+'</option>'; }).join("")
+    +'<option value="__new__">+ New muscle group…</option>';
+  if(cur && sel.querySelector('option[value="'+cur+'"]')) sel.value=cur;
+  $("cxGroupNewWrap").style.display = sel.value==="__new__" ? "block" : "none";
+}
+/* Rebuild every exercise picker (LIFT chips + dropdown, custom-form groups,
+   PLAN rows, History filter) after the exercise list changes. */
+function refreshExercisePickers(selectId){
+  renderGroupChips();
+  if(selectId!=null) selectExerciseById(selectId); else fillExerciseSelect();
+  renderCustomGroupOptions();
+  var hf=$("histFilter");
+  if(hf){
+    var hv=hf.value;
+    hf.innerHTML='<option value="">All exercises</option>'+state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;}).map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join("");
+    if(hv && hf.querySelector('option[value="'+hv+'"]')) hf.value=hv;
+  }
+  refreshPlanItemSelects();
 }
 function refreshHints(fromUser){
   var id=+$("exSelect").value; var box=$("exHints");
@@ -672,8 +780,50 @@ function refreshHints(fromUser){
   $("lastSessionLine").textContent = ls ? ("Last session "+fmtDay(ls.key)+": "+ls.sets.map(function(s){return fmtNum(s.w)+" "+s.u+" × "+s.r;}).join(" · ")) : "";
   if(!fromUser && !typedDirty && last){ $("inWeight").value=last.w; $("inReps").value=last.r; $("inUnit").value=last.u; }
 }
-$("exSearch").addEventListener("input",function(){ fillExerciseSelect(this.value); });
 $("exSelect").addEventListener("change",function(){ typedDirty=false; refreshHints(false); });
+$("cxGroupSel").addEventListener("change",function(){
+  $("cxGroupNewWrap").style.display = this.value==="__new__" ? "block" : "none";
+  if(this.value==="__new__") $("cxGroupNew").focus();
+});
+$("addCustomExBtn").addEventListener("click",function(){
+  if(!currentUser){ toast("Sign in to add a custom exercise."); return; }
+  var name=$("cxName").value.trim();
+  var group=$("cxGroupSel").value==="__new__" ? $("cxGroupNew").value.trim() : $("cxGroupSel").value;
+  if(!name){ toast("Give the exercise a name."); $("cxName").focus(); return; }
+  if(!group){ toast("Name the new muscle group."); $("cxGroupNew").focus(); return; }
+  var key=exKey(name,group), existing=null;
+  state.exercises.forEach(function(e){ if(exKey(e.name,e.group)===key) existing=e; });
+  if(existing){
+    selectExerciseById(existing.id);
+    $("cxNote").textContent="\""+existing.name+"\" is already in "+existing.group+".";
+    toast("That exercise already exists — selected it for you.");
+    return;
+  }
+  var ex={id:state.nextExId++, name:name, group:group};
+  state.exercises.push(ex);
+  publicExercises.push({name:name, group:group});
+  save();
+  refreshExercisePickers(ex.id);
+  renderHeader();
+  $("cxName").value=""; $("cxGroupNew").value="";
+  $("cxNote").textContent="Adding \""+name+"\" to the public exercise list…";
+  if(fbDb){
+    fbDb.collection("publicExercises").add({
+      name:name, muscleGroup:group,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      $("cxNote").textContent="\""+name+"\" is now public — it shows in the picker for everyone.";
+      toast("Added "+name+" ("+group+") — now public for everyone.");
+    }).catch(function(err){
+      console.warn("Public exercise write failed", err);
+      $("cxNote").textContent="\""+name+"\" was added on this device, but publishing it failed — it may not appear for other visitors yet.";
+      toast("Added on this device — publishing to the public list failed.");
+    });
+  } else {
+    $("cxNote").textContent="\""+name+"\" was added on this device.";
+    toast("Added "+name+" ("+group+").");
+  }
+});
 ["inWeight","inReps"].forEach(function(id){ $(id).addEventListener("input",function(){ typedDirty=true; }); });
 $("inUnit").addEventListener("change",function(){ typedDirty=true; });
 
@@ -746,22 +896,70 @@ function renderToday(){
 }
 
 /* ================= PLAN ================= */
+function planPrefill(div){
+  var exId=+div.querySelector(".pi-ex").value, best=bestSet(exId), last=lastSetOf(exId);
+  if(best){ div.querySelector(".pi-w").value=Math.round(fromKg(best.kg*0.85,(last?last.u:"lb"))*2)/2; div.querySelector(".pi-u").value=(last?last.u:"lb"); div.querySelector(".pi-r").value=6; }
+  else if(last){ div.querySelector(".pi-w").value=last.w; div.querySelector(".pi-r").value=last.r; div.querySelector(".pi-u").value=last.u; }
+}
+function planGroupOf(div){ return div.dataset ? (div.dataset.group||"") : ""; }
+function renderPlanGroupChips(div){
+  var box=div.querySelector(".pi-groups"); if(!box) return;
+  var groups=allGroups();
+  var cur=planGroupOf(div);
+  if(!cur || groups.indexOf(cur)<0){ cur=groups[0]||""; if(div.dataset) div.dataset.group=cur; }
+  box.innerHTML=groups.map(function(g){
+    return '<button type="button" class="gchip" data-group="'+esc(g)+'" aria-pressed="'+(g===cur?"true":"false")+'">'+esc(g)+'<span class="cnt">'+exercisesInGroup(g).length+'</span></button>';
+  }).join("");
+  box.querySelectorAll("[data-group]").forEach(function(b){
+    b.addEventListener("click",function(){
+      if(div.dataset) div.dataset.group=b.getAttribute("data-group");
+      renderPlanGroupChips(div);
+      planFillExercises(div,null);
+      planPrefill(div);
+    });
+  });
+}
+function planFillExercises(div, keepExId){
+  var g=planGroupOf(div);
+  if(!g){ var groups=allGroups(); g=groups[0]||""; if(div.dataset) div.dataset.group=g; }
+  var items=exercisesInGroup(g);
+  var sel=div.querySelector(".pi-ex");
+  sel.innerHTML=items.length?items.map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join(""):'<option value="">No exercises in this group</option>';
+  if(keepExId!=null && sel.querySelector('option[value="'+keepExId+'"]')) sel.value=keepExId;
+}
 function planItemRow(item){
   var div=document.createElement("div"); div.className="planitem";
-  var opts=state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;})
-    .map(function(e){return '<option value="'+e.id+'"'+(item&&item.ex===e.id?" selected":"")+'>'+esc(e.name)+'</option>';}).join("");
-  div.innerHTML='<div class="grow"><label class="fl">Exercise</label><select class="pi-ex">'+opts+'</select></div>'+
+  var startEx=item?exById(item.ex):null;
+  var groups=allGroups();
+  var startGroup=(startEx && groups.indexOf(startEx.group)>=0) ? startEx.group : (groups[0]||"");
+  div.dataset.group=startGroup;
+  div.innerHTML='<div style="flex:1 1 100%;min-width:0"><span class="fl">Muscle group</span><div class="grouplist pi-groups" role="group" aria-label="Muscle group"></div></div>'+
+    '<div class="grow"><label class="fl">Exercise</label><select class="pi-ex"></select></div>'+
     '<div class="sm"><label class="fl">Weight</label><input class="pi-w" type="number" inputmode="decimal" step="0.5" value="'+(item?item.w:"")+'"></div>'+
     '<div class="sm"><label class="fl">Reps</label><input class="pi-r" type="number" inputmode="numeric" step="1" value="'+(item?item.r:"")+'"></div>'+
     '<div class="sm"><label class="fl">Unit</label><select class="pi-u"><option value="lb"'+(item&&item.u==="lb"?" selected":"")+'>lb</option><option value="kg"'+(item&&item.u==="kg"?" selected":"")+'>kg</option></select></div>'+
     '<button class="del" type="button" aria-label="Remove exercise">×</button>';
+  renderPlanGroupChips(div);
+  planFillExercises(div, item?item.ex:null);
   div.querySelector(".del").addEventListener("click",function(){ div.remove(); });
-  div.querySelector(".pi-ex").addEventListener("change",function(){
-    var exId=+this.value, best=bestSet(exId), last=lastSetOf(exId);
-    if(best){ div.querySelector(".pi-w").value=Math.round(fromKg(best.kg*0.85,(last?last.u:"lb"))*2)/2; div.querySelector(".pi-u").value=(last?last.u:"lb"); div.querySelector(".pi-r").value=6; }
-    else if(last){ div.querySelector(".pi-w").value=last.w; div.querySelector(".pi-r").value=last.r; div.querySelector(".pi-u").value=last.u; }
-  });
+  div.querySelector(".pi-ex").addEventListener("change",function(){ planPrefill(div); });
   return div;
+}
+/* After the exercise list changes, rebuild each PLAN row's group chips +
+   exercise dropdown in place, keeping the exercise it currently has selected. */
+function refreshPlanItemSelects(){
+  document.querySelectorAll("#planItems .planitem").forEach(function(div){
+    var exSel=div.querySelector(".pi-ex");
+    if(!exSel || !div.querySelector(".pi-groups")) return;
+    var curEx=exSel.value?+exSel.value:null;
+    var ex=curEx!=null?exById(curEx):null;
+    var groups=allGroups();
+    var curGroup=planGroupOf(div);
+    var g=(ex && groups.indexOf(ex.group)>=0) ? ex.group : (groups.indexOf(curGroup)>=0 ? curGroup : groups[0]);
+    if(div.dataset) div.dataset.group=g;
+    renderPlanGroupChips(div);
+    planFillExercises(div, curEx);
+  });
 }
 $("addPlanItemBtn").addEventListener("click",function(){ $("planItems").appendChild(planItemRow(null)); });
 $("savePlanBtn").addEventListener("click",function(){
@@ -793,7 +991,7 @@ function renderPlans(){
       queue={date:p.date, items:p.items.map(function(i){return i.ex;})};
       gotoTab("lift"); renderQueue();
       var first=p.items[0];
-      $("exSelect").value=first.ex; typedDirty=false; refreshHints(false);
+      selectExerciseById(first.ex); typedDirty=false; refreshHints(false);
       if(first.w){ $("inWeight").value=first.w; $("inReps").value=first.r||""; $("inUnit").value=first.u; typedDirty=true; }
       toast("Queue loaded — "+p.items.length+" exercises. Targets are prefilled in the plan.");
     });
@@ -852,7 +1050,7 @@ function cardioListHTML(list){
 /* ================= REPORT ================= */
 var MUSCLE_MAP={Chest:["chest"],"Back":["lats","traps"],"Legs":["quads","calves"],"Shoulders":["delts"],"Biceps":["biceps"],"Triceps":["triceps"],"Glutes":["glutes"],"Core":["abs"]};
 function bodySVG(front, intensity){
-  function m(id,x,y,rx,ry){ var o=intensity[id]||0; return '<ellipse class="muscle" cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" '+(o>0?'style="fill:var(--accent);fill-opacity:'+(0.25+0.75*o).toFixed(2)+'"':"")+'/>'; }
+  function m(id,x,y,rx,ry){ var o=intensity[id]||0; return '<ellipse class="muscle" cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" '+(o>0?'style="fill:var(--clay);fill-opacity:'+(0.25+0.75*o).toFixed(2)+'"':"")+'/>'; }
   var s='<svg width="130" height="240" viewBox="0 0 130 240" role="img" aria-label="'+(front?"Front":"Back")+' body map">';
   s+='<circle class="muscle" cx="65" cy="18" r="12"/>';
   if(front){
@@ -1011,7 +1209,9 @@ $("histFilter").addEventListener("change",renderHistory);
 
 /* ================= Init ================= */
 function initSelects(){
-  fillExerciseSelect("");
+  renderGroupChips();
+  fillExerciseSelect();
+  renderCustomGroupOptions();
   fillCardioSelect();
   $("histFilter").innerHTML='<option value="">All exercises</option>'+state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;}).map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join("");
 }
@@ -1029,6 +1229,7 @@ renderPlans();
 renderAll();
 $("dataNote").textContent="Currently holding "+state.sets.length+" sets, "+state.cardio.length+" cardio logs, and "+state.plans.length+" saved plan(s) in this browser.";
 initFirebaseAuth();
+loadPublicExercises();
 </script>
 </body>
 </html>
