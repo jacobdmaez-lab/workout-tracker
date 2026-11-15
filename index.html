@@ -133,6 +133,14 @@
   .planitem{display:flex;gap:8px;align-items:end;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
   .planitem .grow{flex:2 1 160px}.planitem .sm{flex:1 1 70px}
   .planitem label.fl{margin-top:0}
+  .weight-wrap{display:flex;gap:6px;align-items:stretch}
+  .weight-wrap input{flex:1;min-width:0}
+  .negbtn{flex:none;width:46px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:10px;font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:17px;cursor:pointer;padding:0 4px}
+  .negbtn:active{transform:translateY(1px);background:var(--accent-light)}
+  .adminrow{display:flex;gap:8px;align-items:end;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
+  .adminrow .grow{flex:2 1 160px}.adminrow .sm{flex:1 1 130px}
+  .adminrow label.fl{margin-top:0}
+  .adminrow .btn{flex:0 1 auto}
   /* shared plans */
   .sharecode{font-family:"Barlow Condensed",sans-serif;font-size:44px;font-weight:700;letter-spacing:.22em;line-height:1;
     background:var(--accent-light);color:var(--accent-hover);border:1px dashed var(--accent);border-radius:12px;
@@ -201,6 +209,7 @@
     <button class="tab" role="tab" data-view="cardio" aria-selected="false">Cardio</button>
     <button class="tab" role="tab" data-view="report" aria-selected="false">Report</button>
     <button class="tab" role="tab" data-view="history" aria-selected="false">History</button>
+    <button class="tab" role="tab" data-view="admin" aria-selected="false" id="adminTab" style="display:none">Admin</button>
   </nav>
 
   <!-- LIFT -->
@@ -214,7 +223,7 @@
       <select id="exSelect"></select>
       <div class="hints" id="exHints"></div>
       <div class="grid3">
-        <div><label class="fl" for="inWeight">Weight</label><input id="inWeight" type="number" inputmode="decimal" step="0.5" /></div>
+        <div><label class="fl" for="inWeight">Weight</label><div class="weight-wrap"><input id="inWeight" type="number" inputmode="decimal" step="0.5" /><button type="button" class="negbtn" id="negWeightBtn" aria-label="Toggle negative weight" title="Make weight negative / positive">+/−</button></div></div>
         <div><label class="fl" for="inReps">Reps</label><input id="inReps" type="number" inputmode="numeric" step="1" min="1" /></div>
         <div><label class="fl" for="inUnit">Unit</label>
           <select id="inUnit"><option value="lb">lb</option><option value="kg">kg</option></select></div>
@@ -359,6 +368,18 @@
       <label class="fl" for="histFilter">Filter by exercise</label>
       <select id="histFilter"><option value="">All exercises</option></select>
       <div id="historyBody"></div>
+    </div>
+  </section>
+
+  <!-- ADMIN (visible only to the admin account) -->
+  <section class="view" id="view-admin">
+    <div class="card">
+      <h2>Exercise admin</h2>
+      <p class="sub">Only jacob.d.maez@gmail.com can see this screen. Rename an exercise or move it to a different muscle group — your logged sets and history stay attached to the same exercise.</p>
+      <label class="fl" for="adminSearch">Filter exercises</label>
+      <input id="adminSearch" type="text" placeholder="Type to filter…" autocomplete="off" />
+      <div id="adminList"></div>
+      <p class="note" id="adminNote"></p>
     </div>
   </section>
 
@@ -756,6 +777,7 @@ document.querySelectorAll(".tab").forEach(function(btn){
     if(btn.getAttribute("data-view")==="report") renderReport();
     if(btn.getAttribute("data-view")==="history") renderHistory();
     if(btn.getAttribute("data-view")==="plan") renderPlans();
+    if(btn.getAttribute("data-view")==="admin") renderAdminList();
     window.scrollTo(0,0);
   });
 });
@@ -913,6 +935,19 @@ $("addCustomExBtn").addEventListener("click",function(){
 });
 ["inWeight","inReps"].forEach(function(id){ $(id).addEventListener("input",function(){ typedDirty=true; }); });
 $("inUnit").addEventListener("change",function(){ typedDirty=true; });
+/* +/− toggle: phone numeric keyboards often have no minus key, so this flips
+   the sign of whatever weight is in the field (85 → −85 → 85). */
+function toggleNegValue(inputEl){
+  if(!inputEl) return;
+  var raw=String(inputEl.value||"").trim();
+  var v=parseFloat(raw);
+  if(!raw || isNaN(v) || v===0){ toast("Enter a weight first, then tap +/− to flip its sign."); inputEl.focus(); return; }
+  inputEl.value=String(-v);
+  var ev1=document.createEvent("Event"); ev1.initEvent("input",true,false); inputEl.dispatchEvent(ev1);
+  var ev2=document.createEvent("Event"); ev2.initEvent("change",true,false); inputEl.dispatchEvent(ev2);
+  inputEl.focus();
+}
+$("negWeightBtn").addEventListener("click",function(){ toggleNegValue($("inWeight")); });
 
 $("logSetBtn").addEventListener("click",function(){
   var exId=+$("exSelect").value;
@@ -1022,7 +1057,7 @@ function planItemRow(item){
   div.dataset.group=startGroup;
   div.innerHTML='<div style="flex:1 1 100%;min-width:0"><span class="fl">Muscle group</span><div class="grouplist pi-groups" role="group" aria-label="Muscle group"></div></div>'+
     '<div class="grow"><label class="fl">Exercise</label><select class="pi-ex"></select></div>'+
-    '<div class="sm"><label class="fl">Weight</label><input class="pi-w" type="number" inputmode="decimal" step="0.5" value="'+(item?item.w:"")+'"></div>'+
+    '<div class="sm" style="flex:1 1 118px"><label class="fl">Weight</label><div class="weight-wrap"><input class="pi-w" type="number" inputmode="decimal" step="0.5" value="'+(item?item.w:"")+'"><button type="button" class="negbtn pi-neg" aria-label="Toggle negative weight" title="Make weight negative / positive">+/−</button></div></div>'+
     '<div class="sm"><label class="fl">Reps</label><input class="pi-r" type="number" inputmode="numeric" step="1" value="'+(item?item.r:"")+'"></div>'+
     '<div class="sm"><label class="fl">Unit</label><select class="pi-u"><option value="lb"'+(item&&item.u==="lb"?" selected":"")+'>lb</option><option value="kg"'+(item&&item.u==="kg"?" selected":"")+'>kg</option></select></div>'+
     '<button class="del" type="button" aria-label="Remove exercise">×</button>';
@@ -1030,6 +1065,8 @@ function planItemRow(item){
   planFillExercises(div, item?item.ex:null);
   div.querySelector(".del").addEventListener("click",function(){ div.remove(); });
   div.querySelector(".pi-ex").addEventListener("change",function(){ planPrefill(div); });
+  var negBtn=div.querySelector(".pi-neg");
+  if(negBtn) negBtn.addEventListener("click",function(){ toggleNegValue(div.querySelector(".pi-w")); });
   return div;
 }
 /* After the exercise list changes, rebuild each PLAN row's group chips +
@@ -1526,6 +1563,103 @@ renderAll();
 $("dataNote").textContent="Currently holding "+state.sets.length+" sets, "+state.cardio.length+" cardio logs, and "+state.plans.length+" saved plan(s) in this browser.";
 initFirebaseAuth();
 loadPublicExercises();
+
+/* ================= ADMIN: exercise names & muscle groups =================
+   The Admin tab is shown only when the signed-in user's email matches
+   ADMIN_EMAIL. Edits rename/re-group the exercise in place (same id), so
+   logged sets, history, plans and best-set calculations stay attached.
+   Changes save through the normal save() path, which syncs them to the
+   admin's cloud doc; custom exercises that live in the public list also
+   get their publicExercises doc updated on a best-effort basis. */
+var ADMIN_EMAIL = "jacob.d.maez@gmail.com";
+function isAdminUser(){
+  return !!(currentUser && currentUser.email && String(currentUser.email).toLowerCase()===ADMIN_EMAIL);
+}
+function renderAdminList(){
+  var box=$("adminList");
+  if(!box) return;
+  if(!isAdminUser()){
+    box.innerHTML='<p class="empty">Sign in as '+esc(ADMIN_EMAIL)+' to manage exercises.</p>';
+    var n0=$("adminNote"); if(n0) n0.textContent="";
+    return;
+  }
+  var q=($("adminSearch")?$("adminSearch").value:"").trim().toLowerCase();
+  var groups=allGroups();
+  var list=state.exercises.slice().sort(function(a,b){
+    if(a.group!==b.group) return a.group<b.group?-1:1;
+    return a.name<b.name?-1:(a.name>b.name?1:0);
+  }).filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)>=0 || e.group.toLowerCase().indexOf(q)>=0; });
+  if(!list.length){ box.innerHTML='<p class="empty">No exercises match that filter.</p>'; }
+  else{
+    box.innerHTML="";
+    list.forEach(function(ex){
+      var row=document.createElement("div"); row.className="adminrow";
+      var opts=groups.map(function(g){ return '<option value="'+esc(g)+'"'+(g===ex.group?" selected":"")+'>'+esc(g)+'</option>'; }).join("");
+      if(groups.indexOf(ex.group)<0) opts='<option value="'+esc(ex.group)+'" selected>'+esc(ex.group)+'</option>'+opts;
+      row.innerHTML='<div class="grow"><label class="fl">Exercise name</label><input class="adm-name" type="text" value="'+esc(ex.name)+'" autocomplete="off" /></div>'+
+        '<div class="sm"><label class="fl">Muscle group</label><select class="adm-group">'+opts+'</select></div>'+
+        '<button type="button" class="btn secondary small">Save</button>';
+      row.querySelector(".btn").addEventListener("click",function(){ saveAdminExercise(ex.id, row); });
+      box.appendChild(row);
+    });
+  }
+  var note=$("adminNote");
+  if(note) note.textContent="Showing "+list.length+" of "+state.exercises.length+" exercises. Renames apply everywhere this exercise appears; sets already logged keep counting toward it.";
+}
+function saveAdminExercise(id, row){
+  if(!isAdminUser()){ toast("Only the admin account can edit exercises."); return; }
+  var nameInput=row.querySelector(".adm-name");
+  var groupSel=row.querySelector(".adm-group");
+  var newName=nameInput.value.trim();
+  var newGroup=groupSel.value;
+  if(!newName){ toast("Exercise name can't be empty."); nameInput.focus(); return; }
+  if(!newGroup){ toast("Pick a muscle group."); groupSel.focus(); return; }
+  var ex=null;
+  state.exercises.forEach(function(e){ if(e.id===id) ex=e; });
+  if(!ex) return;
+  var oldName=ex.name, oldGroup=ex.group;
+  if(newName===oldName && newGroup===oldGroup){ toast("No changes to save for "+oldName+"."); return; }
+  var dup=false;
+  state.exercises.forEach(function(e){ if(e.id!==id && exKey(e.name,e.group)===exKey(newName,newGroup)) dup=true; });
+  if(dup){ toast("Another exercise already has that name in "+newGroup+"."); return; }
+  ex.name=newName; ex.group=newGroup;
+  save();
+  refreshExercisePickers(null);
+  renderHeader();
+  renderAdminList();
+  toast("Updated: "+newName+" ("+newGroup+").");
+  /* Best effort: if this was a public custom exercise, update its public doc too. */
+  if(fbDb && (oldName!==newName || oldGroup!==newGroup)){
+    fbDb.collection("publicExercises").where("name","==",oldName).get().then(function(snap){
+      snap.forEach(function(doc){
+        var d=doc.data()||{};
+        if(String(d.muscleGroup||d.group||"")===oldGroup){
+          doc.ref.update({name:newName, muscleGroup:newGroup}).catch(function(e){ console.warn("Admin public rename failed", e); });
+        }
+      });
+      for(var i=0;i<publicExercises.length;i++){
+        if(publicExercises[i].name===oldName && publicExercises[i].group===oldGroup){ publicExercises[i]={name:newName, group:newGroup}; }
+      }
+    }).catch(function(err){ console.warn("Admin public rename lookup failed", err); });
+  }
+}
+function renderAdminAccess(){
+  var tab=$("adminTab");
+  var admin=isAdminUser();
+  if(tab) tab.style.display=admin?"":"none";
+  if(!admin){
+    var view=$("view-admin");
+    if(view && view.classList.contains("active")) gotoTab("lift");
+    return;
+  }
+  if($("view-admin") && $("view-admin").classList.contains("active")) renderAdminList();
+}
+if($("adminSearch")) $("adminSearch").addEventListener("input",function(){ renderAdminList(); });
+if(fbAuth){
+  fbAuth.onAuthStateChanged(function(){ renderAdminAccess(); });
+} else {
+  renderAdminAccess();
+}
 
 /* ================= SHARED PLANS (Firestore collection: sharedPlans) =================
    One document per shared plan, document id = its share code. The doc holds:
