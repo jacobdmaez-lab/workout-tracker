@@ -141,6 +141,15 @@
   .adminrow .grow{flex:2 1 160px}.adminrow .sm{flex:1 1 130px}
   .adminrow label.fl{margin-top:0}
   .adminrow .btn{flex:0 1 auto}
+  .adminrow.archived{background:var(--panel2);border-style:dashed}
+  .adminrow.archived .adm-name,.adminrow.archived .adm-group{opacity:.75}
+  .archbadge{display:inline-block;background:var(--clay);color:var(--on-clay);border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;vertical-align:2px;margin-left:8px}
+  .adminmeta{flex:1 1 100%;font-size:13px;color:var(--ink2)}
+  .segrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .segbtn{border:1px solid var(--line-strong);background:var(--panel);color:var(--ink2);border-radius:999px;padding:7px 14px;font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;font-size:15px;cursor:pointer}
+  .segbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+  .btn.archivebtn{background:var(--panel);color:var(--ink);border:1px solid var(--line-strong)}
+  .btn.unarchivebtn{background:var(--clay);color:var(--on-clay);border:1px solid var(--clay)}
   /* shared plans */
   .sharecode{font-family:"Barlow Condensed",sans-serif;font-size:44px;font-weight:700;letter-spacing:.22em;line-height:1;
     background:var(--accent-light);color:var(--accent-hover);border:1px dashed var(--accent);border-radius:12px;
@@ -375,11 +384,27 @@
   <section class="view" id="view-admin">
     <div class="card">
       <h2>Exercise admin</h2>
-      <p class="sub">Only jacob.d.maez@gmail.com can see this screen. Rename an exercise or move it to a different muscle group — your logged sets and history stay attached to the same exercise.</p>
+      <p class="sub">Only jacob.d.maez@gmail.com can see this screen. Rename an exercise or move it to a different muscle group — your logged sets and history stay attached to the same exercise. Archiving hides an exercise from the Lift and Plan pickers without deleting anything; you can bring it back any time.</p>
       <label class="fl" for="adminSearch">Filter exercises</label>
       <input id="adminSearch" type="text" placeholder="Type to filter…" autocomplete="off" />
+      <div class="segrow" role="group" aria-label="Show exercises">
+        <button type="button" class="segbtn" id="adminFilterAll" data-afilter="all" aria-pressed="true">All</button>
+        <button type="button" class="segbtn" id="adminFilterActive" data-afilter="active" aria-pressed="false">Active</button>
+        <button type="button" class="segbtn" id="adminFilterArchived" data-afilter="archived" aria-pressed="false">Archived</button>
+      </div>
       <div id="adminList"></div>
       <p class="note" id="adminNote"></p>
+    </div>
+    <div class="card">
+      <h2>Merge exercises</h2>
+      <p class="sub">Use this when two entries are really the same exercise. Every set (and plan entry) logged under the duplicate moves onto the exercise you keep, then the duplicate is archived — nothing is deleted, and you can unarchive it above if you ever need it back.</p>
+      <label class="fl" for="mergeSource">Duplicate — merge from</label>
+      <select id="mergeSource"></select>
+      <label class="fl" for="mergeTarget">Keep — merge into</label>
+      <select id="mergeTarget"></select>
+      <p class="note" id="mergeSummary"></p>
+      <div class="btnrow"><button class="btn" id="mergeBtn" type="button">Merge exercises</button></div>
+      <p class="note" id="mergeNote"></p>
     </div>
   </section>
 
@@ -795,7 +820,7 @@ function renderHeader(){
     '<div class="stat"><b>'+state.sets.length+'</b><span>Total sets</span></div>'+
     '<div class="stat"><b>'+Object.keys(days).length+'</b><span>Workout days</span></div>'+
     '<div class="stat"><b>'+tSets+'</b><span>Sets today</span></div>'+
-    '<div class="stat"><b>'+state.exercises.length+'</b><span>Exercises</span></div>'+
+    '<div class="stat"><b>'+activeExercises().length+'</b><span>Exercises</span></div>'+
     '<button type="button" class="custombtn" id="customExBtn" aria-expanded="'+(customOpen?"true":"false")+'" aria-controls="customExBox"'+(currentUser?'':' style="display:none"')+'>+ Custom Exercise</button>';
 }
 document.addEventListener("click",function(ev){
@@ -810,13 +835,22 @@ document.addEventListener("click",function(ev){
 /* ================= LIFT ================= */
 var typedDirty=false;
 var liftGroup=null; /* selected muscle group in the LIFT picker */
+function isArchivedEx(e){ return !!(e && e.archived); }
+function activeExercises(){
+  return state.exercises.filter(function(e){ return !isArchivedEx(e); });
+}
 function allGroups(){
+  var seen={}, out=[];
+  state.exercises.forEach(function(e){ if(!isArchivedEx(e) && e.group && !seen[e.group]){ seen[e.group]=1; out.push(e.group); } });
+  return out.sort();
+}
+function allGroupsIncludingArchived(){
   var seen={}, out=[];
   state.exercises.forEach(function(e){ if(e.group && !seen[e.group]){ seen[e.group]=1; out.push(e.group); } });
   return out.sort();
 }
 function exercisesInGroup(g){
-  return state.exercises.filter(function(e){return e.group===g;})
+  return state.exercises.filter(function(e){return e.group===g && !isArchivedEx(e);})
     .sort(function(a,b){ return a.name<b.name?-1:(a.name>b.name?1:0); });
 }
 function renderGroupChips(){
@@ -845,6 +879,7 @@ function selectExerciseById(id){
   var ex=null;
   state.exercises.forEach(function(e){ if(e.id===id) ex=e; });
   if(!ex) return;
+  if(isArchivedEx(ex)){ renderGroupChips(); fillExerciseSelect(); return; }
   liftGroup=ex.group;
   renderGroupChips();
   fillExerciseSelect(id);
@@ -852,7 +887,7 @@ function selectExerciseById(id){
 function renderCustomGroupOptions(){
   var sel=$("cxGroupSel"); if(!sel) return;
   var cur=sel.value;
-  sel.innerHTML=allGroups().map(function(g){ return '<option value="'+esc(g)+'">'+esc(g)+'</option>'; }).join("")
+  sel.innerHTML=allGroupsIncludingArchived().map(function(g){ return '<option value="'+esc(g)+'">'+esc(g)+'</option>'; }).join("")
     +'<option value="__new__">+ New muscle group…</option>';
   if(cur && sel.querySelector('option[value="'+cur+'"]')) sel.value=cur;
   $("cxGroupNewWrap").style.display = sel.value==="__new__" ? "block" : "none";
@@ -866,7 +901,7 @@ function refreshExercisePickers(selectId){
   var hf=$("histFilter");
   if(hf){
     var hv=hf.value;
-    hf.innerHTML='<option value="">All exercises</option>'+state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;}).map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join("");
+    hf.innerHTML='<option value="">All exercises</option>'+state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;}).map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+(isArchivedEx(e)?" (archived)":"")+'</option>';}).join("");
     if(hv && hf.querySelector('option[value="'+hv+'"]')) hf.value=hv;
   }
   refreshPlanItemSelects();
@@ -903,6 +938,13 @@ $("addCustomExBtn").addEventListener("click",function(){
   var key=exKey(name,group), existing=null;
   state.exercises.forEach(function(e){ if(exKey(e.name,e.group)===key) existing=e; });
   if(existing){
+    if(isArchivedEx(existing)){
+      existing.archived=false; save();
+      refreshExercisePickers(existing.id); renderHeader();
+      $("cxNote").textContent="\""+existing.name+"\" was archived — brought it back to "+existing.group+".";
+      toast(existing.name+" was archived — brought it back for you.");
+      return;
+    }
     selectExerciseById(existing.id);
     $("cxNote").textContent="\""+existing.name+"\" is already in "+existing.group+".";
     toast("That exercise already exists — selected it for you.");
@@ -1112,12 +1154,14 @@ function renderPlans(){
     b.addEventListener("click",function(){
       var p=state.plans.filter(function(x){return x.date===b.getAttribute("data-startplan");})[0];
       if(!p) return;
-      queue={date:p.date, items:p.items.map(function(i){return i.ex;})};
+      var activeItems=p.items.filter(function(i){ var e=exById(i.ex); return e && !isArchivedEx(e); });
+      if(!activeItems.length){ toast("Every exercise in this plan is archived — unarchive one in Admin to start it."); return; }
+      queue={date:p.date, items:activeItems.map(function(i){return i.ex;})};
       gotoTab("lift"); renderQueue();
-      var first=p.items[0];
+      var first=activeItems[0];
       selectExerciseById(first.ex); typedDirty=false; refreshHints(false);
       if(first.w){ $("inWeight").value=first.w; $("inReps").value=first.r||""; $("inUnit").value=first.u; typedDirty=true; }
-      toast("Queue loaded — "+p.items.length+" exercises. Targets are prefilled in the plan.");
+      toast("Queue loaded — "+activeItems.length+" exercises. Targets are prefilled in the plan.");
     });
   });
   box.querySelectorAll("[data-delplan]").forEach(function(b){
@@ -1475,7 +1519,7 @@ $("copyReportBtn").addEventListener("click",function(){
 /* ================= Data: export / import / reset ================= */
 function exportObj(){
   return {
-    exercises: state.exercises.map(function(e){return {id:e.id,name:e.name,muscle_group:e.group};}),
+    exercises: state.exercises.map(function(e){return {id:e.id,name:e.name,muscle_group:e.group,archived:!!e.archived};}),
     sets: state.sets.map(function(s){return {id:s.id,exercise_id:s.ex,weight:s.w,reps:s.r,unit:s.u,created_at:s.ts};}),
     cardio_exercises: state.cardioEx.map(function(c){return {id:c.id,name:c.name};}),
     cardio_logs: state.cardio.map(function(c){return {id:c.id,cardio_exercise_id:c.ex,duration_minutes:c.dur,distance:c.dist,distance_unit:c.du,calories:c.cal,floors:c.floors,incline:c.incline,created_at:c.ts};}),
@@ -1501,7 +1545,7 @@ $("importFile").addEventListener("change",function(){
     try{
       var d=JSON.parse(rd.result);
       var ns={
-        exercises:(d.exercises||[]).map(function(e){return {id:e.id,name:e.name,group:e.muscle_group||e.group||"—"};}),
+        exercises:(d.exercises||[]).map(function(e){return {id:e.id,name:e.name,group:e.muscle_group||e.group||"—",archived:!!e.archived};}),
         sets:(d.sets||[]).map(function(s){return {id:s.id,ex:s.exercise_id,w:s.weight,r:s.reps,u:s.unit,ts:s.created_at};}),
         cardioEx:(d.cardio_exercises||[]).map(function(c){return {id:c.id,name:c.name};}),
         cardio:(d.cardio_logs||[]).map(function(c){return {id:c.id,ex:c.cardio_exercise_id,dur:c.duration_minutes,dist:c.distance,du:c.distance_unit,cal:c.calories,floors:c.floors,incline:c.incline,ts:c.created_at};}),
@@ -1546,7 +1590,7 @@ function initSelects(){
   fillExerciseSelect();
   renderCustomGroupOptions();
   fillCardioSelect();
-  $("histFilter").innerHTML='<option value="">All exercises</option>'+state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;}).map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join("");
+  $("histFilter").innerHTML='<option value="">All exercises</option>'+state.exercises.slice().sort(function(a,b){return a.name<b.name?-1:1;}).map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+(isArchivedEx(e)?" (archived)":"")+'</option>';}).join("");
 }
 function renderAll(){
   renderHeader(); renderToday(); renderQueue(); refreshHints(true);
@@ -1564,10 +1608,13 @@ $("dataNote").textContent="Currently holding "+state.sets.length+" sets, "+state
 initFirebaseAuth();
 loadPublicExercises();
 
-/* ================= ADMIN: exercise names & muscle groups =================
+/* ================= ADMIN: exercise names, groups, archive & merge =================
    The Admin tab is shown only when the signed-in user's email matches
    ADMIN_EMAIL. Edits rename/re-group the exercise in place (same id), so
    logged sets, history, plans and best-set calculations stay attached.
+   Archive (archived:true) hides an exercise from the Lift/Plan pickers
+   without deleting anything; Merge moves a duplicate's sets and plan
+   entries onto the keeper, then archives the duplicate.
    Changes save through the normal save() path, which syncs them to the
    admin's cloud doc; custom exercises that live in the public list also
    get their publicExercises doc updated on a best-effort basis. */
@@ -1575,36 +1622,74 @@ var ADMIN_EMAIL = "jacob.d.maez@gmail.com";
 function isAdminUser(){
   return !!(currentUser && currentUser.email && String(currentUser.email).toLowerCase()===ADMIN_EMAIL);
 }
+var adminFilter="all"; /* all | active | archived */
+function setCountForEx(id){ var n=0; state.sets.forEach(function(s){ if(s.ex===id) n++; }); return n; }
+function planCountForEx(id){ var n=0; state.plans.forEach(function(p){ (p.items||[]).forEach(function(it){ if(it.ex===id) n++; }); }); return n; }
+function syncAdminFilterButtons(){
+  ["all","active","archived"].forEach(function(f){
+    var b=document.querySelector('[data-afilter="'+f+'"]');
+    if(b) b.setAttribute("aria-pressed", adminFilter===f?"true":"false");
+  });
+}
 function renderAdminList(){
   var box=$("adminList");
   if(!box) return;
   if(!isAdminUser()){
     box.innerHTML='<p class="empty">Sign in as '+esc(ADMIN_EMAIL)+' to manage exercises.</p>';
     var n0=$("adminNote"); if(n0) n0.textContent="";
+    renderMergeOptions();
     return;
   }
+  syncAdminFilterButtons();
   var q=($("adminSearch")?$("adminSearch").value:"").trim().toLowerCase();
-  var groups=allGroups();
+  var groups=allGroupsIncludingArchived();
   var list=state.exercises.slice().sort(function(a,b){
     if(a.group!==b.group) return a.group<b.group?-1:1;
     return a.name<b.name?-1:(a.name>b.name?1:0);
-  }).filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)>=0 || e.group.toLowerCase().indexOf(q)>=0; });
+  }).filter(function(e){
+    if(adminFilter==="active" && isArchivedEx(e)) return false;
+    if(adminFilter==="archived" && !isArchivedEx(e)) return false;
+    return !q || e.name.toLowerCase().indexOf(q)>=0 || e.group.toLowerCase().indexOf(q)>=0;
+  });
   if(!list.length){ box.innerHTML='<p class="empty">No exercises match that filter.</p>'; }
   else{
     box.innerHTML="";
     list.forEach(function(ex){
-      var row=document.createElement("div"); row.className="adminrow";
+      var archived=isArchivedEx(ex);
+      var row=document.createElement("div"); row.className="adminrow"+(archived?" archived":"");
       var opts=groups.map(function(g){ return '<option value="'+esc(g)+'"'+(g===ex.group?" selected":"")+'>'+esc(g)+'</option>'; }).join("");
       if(groups.indexOf(ex.group)<0) opts='<option value="'+esc(ex.group)+'" selected>'+esc(ex.group)+'</option>'+opts;
-      row.innerHTML='<div class="grow"><label class="fl">Exercise name</label><input class="adm-name" type="text" value="'+esc(ex.name)+'" autocomplete="off" /></div>'+
+      var cnt=setCountForEx(ex.id);
+      var pcnt=planCountForEx(ex.id);
+      var meta=cnt+" set"+(cnt===1?"":"s")+" logged"+(pcnt?" · in "+pcnt+" plan entr"+(pcnt===1?"y":"ies"):"")+(archived?" · hidden from Lift & Plan pickers":"");
+      row.innerHTML='<div class="grow"><label class="fl">Exercise name'+(archived?'<span class="archbadge">Archived</span>':"")+'</label><input class="adm-name" type="text" value="'+esc(ex.name)+'" autocomplete="off" /></div>'+
         '<div class="sm"><label class="fl">Muscle group</label><select class="adm-group">'+opts+'</select></div>'+
-        '<button type="button" class="btn secondary small">Save</button>';
-      row.querySelector(".btn").addEventListener("click",function(){ saveAdminExercise(ex.id, row); });
+        '<button type="button" class="btn secondary small adm-save">Save</button>'+
+        '<button type="button" class="btn small '+(archived?"unarchivebtn":"archivebtn")+' adm-archive">'+(archived?"Unarchive":"Archive")+'</button>'+
+        '<div class="adminmeta">'+esc(meta)+'</div>';
+      row.querySelector(".adm-save").addEventListener("click",function(){ saveAdminExercise(ex.id, row); });
+      row.querySelector(".adm-archive").addEventListener("click",function(){ setExerciseArchived(ex.id, !archived); });
       box.appendChild(row);
     });
   }
+  var archCount=state.exercises.filter(function(e){ return isArchivedEx(e); }).length;
   var note=$("adminNote");
-  if(note) note.textContent="Showing "+list.length+" of "+state.exercises.length+" exercises. Renames apply everywhere this exercise appears; sets already logged keep counting toward it.";
+  if(note) note.textContent="Showing "+list.length+" of "+state.exercises.length+" exercises ("+archCount+" archived). Renames apply everywhere this exercise appears; sets already logged keep counting toward it — archiving never deletes history.";
+  renderMergeOptions();
+}
+function setExerciseArchived(id, archivedVal){
+  if(!isAdminUser()){ toast("Only the admin account can archive exercises."); return; }
+  var ex=null;
+  state.exercises.forEach(function(e){ if(e.id===id) ex=e; });
+  if(!ex) return;
+  if(!!ex.archived===!!archivedVal){ return; }
+  ex.archived=!!archivedVal;
+  save();
+  refreshExercisePickers(null);
+  renderHeader();
+  renderAdminList();
+  renderAll();
+  toast(archivedVal ? ("Archived "+ex.name+" — hidden from pickers, history kept.") : ("Unarchived "+ex.name+" — back in the pickers."));
 }
 function saveAdminExercise(id, row){
   if(!isAdminUser()){ toast("Only the admin account can edit exercises."); return; }
@@ -1619,9 +1704,9 @@ function saveAdminExercise(id, row){
   if(!ex) return;
   var oldName=ex.name, oldGroup=ex.group;
   if(newName===oldName && newGroup===oldGroup){ toast("No changes to save for "+oldName+"."); return; }
-  var dup=false;
-  state.exercises.forEach(function(e){ if(e.id!==id && exKey(e.name,e.group)===exKey(newName,newGroup)) dup=true; });
-  if(dup){ toast("Another exercise already has that name in "+newGroup+"."); return; }
+  var dup=false, dupArchived=false;
+  state.exercises.forEach(function(e){ if(e.id!==id && exKey(e.name,e.group)===exKey(newName,newGroup)){ dup=true; if(isArchivedEx(e)) dupArchived=true; } });
+  if(dup){ toast(dupArchived ? "An archived exercise already has that name in "+newGroup+" — unarchive it or merge instead." : "Another exercise already has that name in "+newGroup+" — use Merge below if they are the same exercise."); return; }
   ex.name=newName; ex.group=newGroup;
   save();
   refreshExercisePickers(null);
@@ -1643,6 +1728,90 @@ function saveAdminExercise(id, row){
     }).catch(function(err){ console.warn("Admin public rename lookup failed", err); });
   }
 }
+/* ===== Archive + Merge =====
+   Archive is a flag on the exercise (archived:true). Pickers (Lift group
+   chips/dropdown, Plan rows, shared-plan rows) only offer active exercises;
+   exById still resolves archived ones so History, Reports and old plans
+   keep showing their real names and sets.
+   Merge re-points every set and personal-plan entry from the duplicate
+   onto the keeper, then archives the duplicate. Nothing is deleted. */
+function sortedExercisesForAdmin(){
+  return state.exercises.slice().sort(function(a,b){
+    if(a.group!==b.group) return a.group<b.group?-1:1;
+    return a.name<b.name?-1:(a.name>b.name?1:0);
+  });
+}
+function mergeOptionLabel(e){
+  var cnt=setCountForEx(e.id);
+  return e.name+" — "+e.group+" · "+cnt+" set"+(cnt===1?"":"s")+(isArchivedEx(e)?" (archived)":"");
+}
+function renderMergeOptions(){
+  var src=$("mergeSource"), tgt=$("mergeTarget"), btn=$("mergeBtn"), sum=$("mergeSummary");
+  if(!src || !tgt) return;
+  if(!isAdminUser()){
+    src.innerHTML='<option value="">Sign in as admin to merge</option>';
+    tgt.innerHTML='<option value="">Sign in as admin to merge</option>';
+    if(btn) btn.disabled=true;
+    if(sum) sum.textContent="";
+    return;
+  }
+  var prevSrc=src.value, prevTgt=tgt.value;
+  var all=sortedExercisesForAdmin();
+  var active=all.filter(function(e){ return !isArchivedEx(e); });
+  src.innerHTML=all.length ? all.map(function(e){ return '<option value="'+e.id+'">'+esc(mergeOptionLabel(e))+'</option>'; }).join("") : '<option value="">No exercises</option>';
+  tgt.innerHTML=active.length ? active.map(function(e){ return '<option value="'+e.id+'">'+esc(mergeOptionLabel(e))+'</option>'; }).join("") : '<option value="">No active exercises</option>';
+  if(prevSrc && src.querySelector('option[value="'+prevSrc+'"]')) src.value=prevSrc;
+  if(prevTgt && tgt.querySelector('option[value="'+prevTgt+'"]')) tgt.value=prevTgt;
+  /* Default to two different exercises so a merge is never a no-op. */
+  if(src.value && tgt.value && src.value===tgt.value){
+    for(var i=0;i<tgt.options.length;i++){ if(tgt.options[i].value!==src.value){ tgt.selectedIndex=i; break; } }
+  }
+  if(btn){ btn.disabled=!(src.value && tgt.value && src.value!==tgt.value); btn.removeAttribute("data-armed"); btn.textContent="Merge exercises"; }
+  updateMergeSummary();
+}
+function updateMergeSummary(){
+  var src=$("mergeSource"), tgt=$("mergeTarget"), sum=$("mergeSummary"), btn=$("mergeBtn");
+  if(!src || !tgt || !sum) return;
+  if(btn && btn.getAttribute("data-armed")){ btn.removeAttribute("data-armed"); btn.textContent="Merge exercises"; }
+  var sId=src.value?+src.value:null, tId=tgt.value?+tgt.value:null;
+  if(!sId || !tId){ sum.textContent="Pick a duplicate and the exercise to keep."; return; }
+  if(sId===tId){ sum.textContent="Pick two different exercises — the duplicate and the one to keep can't be the same."; if(btn) btn.disabled=true; return; }
+  if(btn) btn.disabled=false;
+  var sEx=exById(sId), tEx=exById(tId);
+  var cnt=setCountForEx(sId), pcnt=planCountForEx(sId);
+  sum.textContent="This will move "+cnt+" set"+(cnt===1?"":"s")+(pcnt?" and "+pcnt+" plan entr"+(pcnt===1?"y":"ies"):"")+" from \u201C"+sEx.name+" ("+sEx.group+")\u201D onto \u201C"+tEx.name+" ("+tEx.group+")\u201D, then archive \u201C"+sEx.name+"\u201D. History will show those sets under "+tEx.name+" from then on.";
+}
+function doMergeExercises(){
+  if(!isAdminUser()){ toast("Only the admin account can merge exercises."); return; }
+  var src=$("mergeSource"), tgt=$("mergeTarget"), btn=$("mergeBtn"), note=$("mergeNote");
+  if(!src || !tgt) return;
+  var sId=+src.value, tId=+tgt.value;
+  if(!sId || !tId || sId===tId){ toast("Pick two different exercises to merge."); return; }
+  var sEx=null, tEx=null;
+  state.exercises.forEach(function(e){ if(e.id===sId) sEx=e; if(e.id===tId) tEx=e; });
+  if(!sEx || !tEx){ toast("One of those exercises is no longer in the list."); renderMergeOptions(); return; }
+  if(isArchivedEx(tEx)){ toast("Merge into an active exercise — unarchive "+tEx.name+" first if you want to keep it."); return; }
+  if(!btn.getAttribute("data-armed")){
+    btn.setAttribute("data-armed","1");
+    btn.textContent="Tap again to confirm merge";
+    if(note) note.textContent="Confirm: "+setCountForEx(sId)+" set(s) will move from "+sEx.name+" to "+tEx.name+", and "+sEx.name+" will be archived.";
+    return;
+  }
+  btn.removeAttribute("data-armed"); btn.textContent="Merge exercises";
+  var movedSets=0, movedPlans=0;
+  state.sets.forEach(function(s){ if(s.ex===sId){ s.ex=tId; movedSets++; } });
+  state.plans.forEach(function(p){ (p.items||[]).forEach(function(it){ if(it.ex===sId){ it.ex=tId; movedPlans++; } }); });
+  if(queue && queue.items){ queue.items=queue.items.map(function(id){ return id===sId?tId:id; }); }
+  sEx.archived=true;
+  save();
+  refreshExercisePickers(null);
+  renderHeader();
+  renderPlans();
+  renderAdminList();
+  renderAll();
+  if(note) note.textContent="Merged: moved "+movedSets+" set"+(movedSets===1?"":"s")+(movedPlans?" and "+movedPlans+" plan entr"+(movedPlans===1?"y":"ies"):"")+" from "+sEx.name+" onto "+tEx.name+". "+sEx.name+" is now archived — unarchive it above any time.";
+  toast("Merged "+sEx.name+" into "+tEx.name+" — "+movedSets+" set"+(movedSets===1?"":"s")+" moved.");
+}
 function renderAdminAccess(){
   var tab=$("adminTab");
   var admin=isAdminUser();
@@ -1650,11 +1819,18 @@ function renderAdminAccess(){
   if(!admin){
     var view=$("view-admin");
     if(view && view.classList.contains("active")) gotoTab("lift");
+    renderMergeOptions();
     return;
   }
-  if($("view-admin") && $("view-admin").classList.contains("active")) renderAdminList();
+  if($("view-admin") && $("view-admin").classList.contains("active")) renderAdminList(); else renderMergeOptions();
 }
 if($("adminSearch")) $("adminSearch").addEventListener("input",function(){ renderAdminList(); });
+document.querySelectorAll("[data-afilter]").forEach(function(b){
+  b.addEventListener("click",function(){ adminFilter=b.getAttribute("data-afilter")||"all"; renderAdminList(); });
+});
+if($("mergeSource")) $("mergeSource").addEventListener("change",updateMergeSummary);
+if($("mergeTarget")) $("mergeTarget").addEventListener("change",updateMergeSummary);
+if($("mergeBtn")) $("mergeBtn").addEventListener("click",doMergeExercises);
 if(fbAuth){
   fbAuth.onAuthStateChanged(function(){ renderAdminAccess(); });
 } else {
@@ -1711,13 +1887,23 @@ function collectItemsFrom(container){
    first so a plan still lines up if local ids ever differ. */
 function resolveSharedItem(item){
   if(!item) return null;
-  var found = null;
+  var found = null, archivedMatch = null;
   if(item.exName){
-    state.exercises.forEach(function(e){ if(!found && e.name.toLowerCase() === String(item.exName).toLowerCase()) found = e; });
+    state.exercises.forEach(function(e){
+      if(e.name.toLowerCase() !== String(item.exName).toLowerCase()) return;
+      if(!isArchivedEx(e) && !found) found = e;
+      else if(isArchivedEx(e) && !archivedMatch) archivedMatch = e;
+    });
   }
   if(!found && item.ex){
-    state.exercises.forEach(function(e){ if(!found && e.id === item.ex) found = e; });
+    state.exercises.forEach(function(e){
+      if(e.id !== item.ex) return;
+      if(!isArchivedEx(e) && !found) found = e;
+      else if(isArchivedEx(e) && !archivedMatch) archivedMatch = e;
+    });
   }
+  /* Prefer the active exercise; an archived-only match no longer resolves,
+     so archived exercises stay out of shared-plan workouts too. */
   if(!found) return null;
   return { ex: found.id, w: item.w != null ? item.w : null, r: item.r != null ? item.r : null, u: item.u || "lb" };
 }
